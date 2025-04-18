@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        cc: [gcc, clang]
+        cc: [g++, clang++]
 
     steps:
     - uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
       run: make CC=${{ matrix.cc }} release
 
     - name: PGO
-      if: matrix.cc == 'gcc'
+      if: matrix.cc == 'g++'
       run: make CC=${{ matrix.cc }} pgo
 
   Bench:
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        cc: [gcc, clang]
+        cc: [g++, clang++]
 
     steps:
     - uses: actions/checkout@v4

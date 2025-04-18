@@ -45,7 +45,7 @@
 
 static void error(const char *msg) { perror(msg); exit(0); }
 
-char *Query(char *hostname, char *message) {
+char *Query(const char *hostname, char *message) {
 
     // Setup sockets on windows, does nothing on linux
     WSADATA wsaData;
@@ -70,7 +70,7 @@ char *Query(char *hostname, char *message) {
         error("ERROR no such host");
 
     // Fill in server struct
-    SOCKADDR_IN server = { 0 };
+    SOCKADDR_IN server = {};
     server.sin_family = AF_INET;
     server.sin_port = htons(80);
     server.sin_addr.s_addr = *(uint64_t *)hostent->h_addr;

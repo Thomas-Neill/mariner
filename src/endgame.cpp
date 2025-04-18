@@ -24,7 +24,7 @@
 #include "endgame.h"
 
 
-Endgame EndgameTable[ENDGAME_TABLE_SIZE] = { 0 };
+Endgame EndgameTable[ENDGAME_TABLE_SIZE] = {};
 
 
 // Generates a material key from a string like "KRPkr"

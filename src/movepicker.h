@@ -21,9 +21,10 @@
 #include "types.h"
 
 
-typedef enum MPStage {
+typedef int32_t MPStage;
+enum {
     TTMOVE, GEN_NOISY, NOISY_GOOD, KILLER, GEN_QUIET, QUIET, NOISY_BAD
-} MPStage;
+};
 
 typedef struct MovePicker {
     Thread *thread;

@@ -194,6 +194,7 @@ void TakeMove(Position *pos) {
         AddPiece(pos, from, MakePiece(sideToMove, KING), false);
         goto done;
     }
+    {
 
     // Make reverse move (from <-> to)
     MovePiece(pos, to, from, false);
@@ -211,6 +212,7 @@ void TakeMove(Position *pos) {
         assert(ValidPromotion(promo));
         ClearPiece(pos, from, false);
         AddPiece(pos, from, MakePiece(sideToMove, PAWN), false);
+    }
     }
 
 done:
@@ -267,6 +269,7 @@ void MakeMove(Position *pos, const Move move) {
         AddPiece(pos, to, MakePiece(sideToMove, KING), true);
         goto done;
     }
+    {
 
     // Remove captured piece if any
     Piece capt = capturing(move);
@@ -304,6 +307,7 @@ void MakeMove(Position *pos, const Move move) {
             ClearPiece(pos, to, true);
             AddPiece(pos, to, promo, true);
         }
+    }
     }
 
 done:

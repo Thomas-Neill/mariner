@@ -442,8 +442,8 @@ CONSTR(3) InitCuckoo() {
 
                     uint32_t i = Hash1(hash);
                     while (true) {
-                        Swap(cuckoo[i], hash);
-                        Swap(cuckooMove[i], move);
+                        std::swap(cuckoo[i], hash);
+                        std::swap(cuckooMove[i], move);
 
                         if (move == NOMOVE)
                             break;

@@ -39,8 +39,8 @@ void InitThreads(int count) {
     if (Threads)  free(Threads);
     if (pthreads) free(pthreads);
 
-    Threads  = calloc(count, sizeof(Thread));
-    pthreads = calloc(count, sizeof(pthread_t));
+    Threads  = (Thread*)calloc(count, sizeof(Thread));
+    pthreads = (pthread_t*)calloc(count, sizeof(pthread_t));
 
     // Each thread knows its own index and total thread count
     for (int i = 0; i < count; ++i)
@@ -86,7 +86,7 @@ void PrepareSearch(Position *pos, Move searchmoves[]) {
     legalMoves.count = legalMoves.next = 0;
     GenLegalMoves(pos, &legalMoves);
 
-    RootMove rootMoves[256] = { 0 };
+    RootMove rootMoves[256] = {};
     int rootMoveCount = 0;
 
     // Add legal searchmoves to the root moves by checking if it is in the legalMoves list
@@ -159,7 +159,7 @@ void RunWithAllThreads(void *(*func)(void *)) {
 }
 
 // Thread sleeps until it is woken up
-void Wait(atomic_bool *condition) {
+void Wait(std::atomic_bool *condition) {
     pthread_mutex_lock(&mutex);
     while (!atomic_load(condition))
         pthread_cond_wait(&sleepCondition, &mutex);

@@ -51,7 +51,7 @@ static void ParseTimeControl(const char *str, const Position *pos) {
     SetLimit(str, "mate",      &Limits.mate);
 
     // Parse searchmoves, assumes they are at the end of the string
-    char *searchmoves = strstr(str, "searchmoves ");
+    char *searchmoves = (char*)strstr(str, "searchmoves ");
     if (searchmoves) {
         char *move = strtok(searchmoves, " ");
         for (int i = 0; (move = strtok(NULL, " ")); ++i)
@@ -252,10 +252,10 @@ void PrintThinking(const Thread *thread, int alpha, int beta) {
         if (pv->length == 0) break;
 
         // Determine whether we have a centipawn or mate score
-        char *type = isMate(score) ? "mate" : "cp";
+        const char *type = isMate(score) ? "mate" : "cp";
 
         // Determine if score is a lower bound, upper bound or exact
-        char *bound = score >= beta  ? " lowerbound"
+        const char *bound = score >= beta  ? " lowerbound"
                     : score <= alpha ? " upperbound"
                                      : "";
 

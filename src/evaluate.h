@@ -35,6 +35,7 @@ typedef PawnEntry PawnCache[PAWN_CACHE_SIZE];
 
 extern const int Tempo;
 extern const int PieceValue[COLOR_NB][PIECE_NB];
+extern const int PieceTypeValue[TYPE_NB];
 
 
 // Tapered Eval
@@ -60,3 +61,44 @@ INLINE int EvalPositionWhitePov(const Position *pos, PawnCache pc) {
     int score = EvalPosition(pos, pc);
     return sideToMove == WHITE ? score : -score;
 }
+
+extern const int PieceSqValue[6][64];
+
+// Misc
+extern const int PawnDoubled;
+extern const int PawnDoubled2;
+extern const int PawnIsolated;
+extern const int PawnSupport;
+extern const int PawnThreat;
+extern const int PushThreat;
+extern const int PawnOpen;
+extern const int BishopPair;
+extern const int KingAtkPawn;
+extern const int OpenForward;
+extern const int SemiForward;
+extern const int NBBehindPawn;
+extern const int BishopBadP;
+extern const int Shelter;
+
+// Passed pawn
+extern const int PawnPassed[RANK_NB];
+extern const int PassedDefended[RANK_NB];
+extern const int PassedBlocked[4];
+extern const int PassedFreeAdv[4];
+extern const int PassedDistUs[4];
+extern const int PassedDistThem;
+extern const int PassedRookBack;
+extern const int PassedSquare;
+
+// Pawn phalanx
+extern const int PawnPhalanx[RANK_NB];
+
+
+extern const int ThreatByMinor[8];
+extern const int ThreatByRook[8];
+
+// KingLineDanger
+extern const int KingLineDanger[28];
+
+// Mobility
+extern const int Mobility[4][28];

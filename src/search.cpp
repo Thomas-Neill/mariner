@@ -37,9 +37,9 @@
 
 
 SearchLimits Limits = { .multiPV = 1 };
-atomic_bool ABORT_SIGNAL;
-atomic_bool SEARCH_STOPPED = true;
-atomic_bool Minimal = false;
+std::atomic_bool ABORT_SIGNAL;
+std::atomic_bool SEARCH_STOPPED(true);
+std::atomic_bool Minimal(false);
 
 static int Reductions[2][32][32];
 
@@ -130,7 +130,7 @@ static int Quiescence(Thread *thread, Stack *ss, int alpha, int beta) {
 
     Move ttMove = ttHit ? tte->move : NOMOVE;
     int ttScore = ttHit ? ScoreFromTT(tte->score, ss->ply) : NOSCORE;
-    int ttEval  = ttHit ? tte->eval : NOSCORE;
+    int ttEval  = ttHit ? tte->eval : (int32_t)NOSCORE;
     // Depth ttDepth = tte->depth;
     int ttBound = Bound(tte);
 
@@ -291,7 +291,7 @@ static int AlphaBeta(Thread *thread, Stack *ss, int alpha, int beta, Depth depth
 
     Move ttMove = ttHit ? tte->move : NOMOVE;
     int ttScore = ttHit ? ScoreFromTT(tte->score, ss->ply) : NOSCORE;
-    int ttEval = ttHit ? tte->eval : NOSCORE;
+    int ttEval = ttHit ? tte->eval : (int32_t)NOSCORE;
     Depth ttDepth = tte->depth;
     int ttBound = Bound(tte);
 
@@ -363,7 +363,7 @@ static int AlphaBeta(Thread *thread, Stack *ss, int alpha, int beta, Depth depth
     // Skip pruning in check, pv nodes, early iterations, when proving singularity, looking for terminal scores, or after a null move
     if (inCheck || pvNode || !thread->doPruning || ss->excluded || isTerminal(beta) || (ss-1)->move == NOMOVE)
         goto move_loop;
-
+    {
     // Reverse Futility Pruning
     if (   depth < 7
         && eval >= beta
@@ -427,6 +427,7 @@ static int AlphaBeta(Thread *thread, Stack *ss, int alpha, int beta, Depth depth
             if (score >= probCutBeta)
                 return isWin(score) ? score : score - 160;
         }
+    }
     }
 
 move_loop:
@@ -716,7 +717,7 @@ static void AspirationWindow(Thread *thread, Stack *ss) {
 // Iterative deepening
 static void *IterativeDeepening(void *voidThread) {
 
-    Thread *thread = voidThread;
+    Thread *thread = (Thread*)voidThread;
     Position *pos = &thread->pos;
     Stack *ss = thread->ss+SS_OFFSET;
     bool mainThread = thread->index == 0;
@@ -775,7 +776,8 @@ static void *IterativeDeepening(void *voidThread) {
 }
 
 // Root of search
-void *SearchPosition(void *pos) {
+void *SearchPosition(void *_pos) {
+    Position* pos = (Position*)_pos;
 
     SEARCH_STOPPED = false;
 

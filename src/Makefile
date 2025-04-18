@@ -18,8 +18,8 @@
 
 # General
 EXE    = weiss
-SRC    = *.c pyrrhic/tbprobe.c tuner/*.c query/*.c noobprobe/*.c onlinesyzygy/*.c
-CC     = gcc
+SRC    = *.cpp pyrrhic/tbprobe.cpp tuner/*.cpp query/*.cpp noobprobe/*.cpp onlinesyzygy/*.cpp
+CC     = g++
 
 # Defines
 POPCNT = -msse3 -mpopcnt
@@ -34,9 +34,9 @@ GIT_HEAD_COMMIT_ID_DEF :=
 endif
 
 # Flags
-STD    = -std=gnu11
+STD    = -std=c++11
 LIBS   = -pthread -lm
-WARN   = -Wall -Wextra -Wshadow -Werror -Wmissing-declarations
+WARN   = -Wall -Wextra -Wshadow -Werror -Wmissing-declarations -Wno-missing-field-initializers -Wno-vla
 NDEBUG = -DNDEBUG
 
 FLAGS  = $(STD) $(WARN) -O3 -flto=auto
