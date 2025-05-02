@@ -18,19 +18,19 @@
 
 #pragma once
 
-#include <time.h>
+#include <chrono>
 
 #include "threads.h"
 
+typedef std::chrono::high_resolution_clock::time_point time_point;
 
-INLINE TimePoint Now() {
-    struct timespec t;
-    clock_gettime(CLOCK_MONOTONIC, &t);
-    return t.tv_sec * 1000 + t.tv_nsec / 1000000;
+INLINE time_point Now() {
+    return std::chrono::high_resolution_clock::now();
 }
 
-INLINE int TimeSince(const TimePoint tp) {
-    return Now() - tp;
+INLINE int TimeSince(const time_point tp) {
+    auto time_span = std::chrono::duration_cast<std::chrono::duration<double>>(Now() - tp);
+    return static_cast<int>(fabs(time_span.count()) * 1000.0);
 }
 
 void InitTimeManagement();

@@ -37,19 +37,19 @@
 
 
 SearchLimits Limits = { .multiPV = 1 };
-std::atomic_bool ABORT_SIGNAL;
-std::atomic_bool SEARCH_STOPPED(true);
-std::atomic_bool Minimal(false);
+atomic_bool ABORT_SIGNAL;
+atomic_bool SEARCH_STOPPED = true;
+atomic_bool Minimal = false;
 
 static int Reductions[2][32][32];
 
 
 // Initializes the late move reduction array
-CONSTR(1) InitReductions() {
+CONSTR(InitReductions, 1) {
     for (int depth = 1; depth < 32; ++depth)
         for (int moves = 1; moves < 32; ++moves)
-            Reductions[0][depth][moves] = 0.38 + log(depth) * log(moves) / 3.76, // capture
-            Reductions[1][depth][moves] = 2.01 + log(depth) * log(moves) / 2.32; // quiet
+            Reductions[0][depth][moves] = static_cast<int>(0.38 + log(depth) * log(moves) / 3.76), // capture
+            Reductions[1][depth][moves] = static_cast<int>(2.01 + log(depth) * log(moves) / 2.32); // quiet
 }
 
 // Checks whether a move was already searched in multi-pv mode
@@ -64,7 +64,7 @@ static bool AlreadySearchedMultiPV(Thread *thread, Move move) {
 static int CorrectEval(Thread *thread, Stack *ss, int eval, int rule50) {
     int correctedEval = eval + GetCorrectionHistory(thread, ss);
     if (rule50 > 7)
-        correctedEval *= (256 - rule50) / 256.0;
+        correctedEval -= static_cast<int>((correctedEval * rule50) / 256.0);
     return CLAMP(correctedEval, -TBWIN_IN_MAX + 1, TBWIN_IN_MAX - 1);
 }
 
@@ -130,7 +130,7 @@ static int Quiescence(Thread *thread, Stack *ss, int alpha, int beta) {
 
     Move ttMove = ttHit ? tte->move : NOMOVE;
     int ttScore = ttHit ? ScoreFromTT(tte->score, ss->ply) : NOSCORE;
-    int ttEval  = ttHit ? tte->eval : (int32_t)NOSCORE;
+    int ttEval  = ttHit ? tte->eval : NOSCORE;
     // Depth ttDepth = tte->depth;
     int ttBound = Bound(tte);
 
@@ -237,8 +237,8 @@ search:
 }
 
 // Alpha Beta
-static int AlphaBeta(Thread *thread, Stack *ss, int alpha, int beta, Depth depth, bool cutnode) {
-
+static int AlphaBeta(Thread *thread, Stack *ss, int alpha, int beta, Depth depth, bool cutnode) 
+{
     // Quiescence at the end of search
     if (depth <= 0)
         return Quiescence(thread, ss, alpha, beta);
@@ -291,7 +291,7 @@ static int AlphaBeta(Thread *thread, Stack *ss, int alpha, int beta, Depth depth
 
     Move ttMove = ttHit ? tte->move : NOMOVE;
     int ttScore = ttHit ? ScoreFromTT(tte->score, ss->ply) : NOSCORE;
-    int ttEval = ttHit ? tte->eval : (int32_t)NOSCORE;
+    int ttEval = ttHit ? tte->eval : NOSCORE;
     Depth ttDepth = tte->depth;
     int ttBound = Bound(tte);
 
@@ -361,76 +361,73 @@ static int AlphaBeta(Thread *thread, Stack *ss, int alpha, int beta, Depth depth
         depth--;
 
     // Skip pruning in check, pv nodes, early iterations, when proving singularity, looking for terminal scores, or after a null move
-    if (inCheck || pvNode || !thread->doPruning || ss->excluded || isTerminal(beta) || (ss-1)->move == NOMOVE)
-        goto move_loop;
+    if (!inCheck && !pvNode && thread->doPruning && !ss->excluded && !isTerminal(beta) && (ss - 1)->move != NOMOVE)
     {
-    // Reverse Futility Pruning
-    if (   depth < 7
-        && eval >= beta
-        && eval - 77 * (depth - improving) - (ss-1)->histScore / 131 >= beta
-        && (!ttMove || GetHistory(thread, ss, ttMove) > 6450))
-        return eval;
+        // Reverse Futility Pruning
+        if (depth < 7
+            && eval >= beta
+            && eval - 77 * (depth - improving) - (ss - 1)->histScore / 131 >= beta
+            && (!ttMove || GetHistory(thread, ss, ttMove) > 6450))
+            return eval;
 
-    // Null Move Pruning
-    if (   eval >= beta
-        && eval >= ss->staticEval
-        && ss->staticEval >= beta + 138 - 13 * depth
-        && (ss-1)->histScore < 28500
-        && pos->nonPawnCount[sideToMove] > (depth > 8)) {
+        // Null Move Pruning
+        if (eval >= beta
+            && eval >= ss->staticEval
+            && ss->staticEval >= beta + 138 - 13 * depth
+            && (ss - 1)->histScore < 28500
+            && pos->nonPawnCount[sideToMove] >(depth > 8 ? 1 : 0))
+        {
+            Depth reduction = 4 + depth / 4 + MIN(3, (eval - beta) / 227);
 
-        Depth reduction = 4 + depth / 4 + MIN(3, (eval - beta) / 227);
+            ss->move = NOMOVE;
+            ss->continuation = &thread->continuation[0][0][EMPTY][0];
+            ss->contCorr = &thread->contCorrHistory[EMPTY][0];
 
-        ss->move = NOMOVE;
-        ss->continuation = &thread->continuation[0][0][EMPTY][0];
-        ss->contCorr = &thread->contCorrHistory[EMPTY][0];
+            MakeNullMove(pos);
+            int score = -AlphaBeta(thread, ss + 1, -beta, -alpha, depth - reduction, !cutnode);
+            TakeNullMove(pos);
 
-        MakeNullMove(pos);
-        int score = -AlphaBeta(thread, ss+1, -beta, -alpha, depth - reduction, !cutnode);
-        TakeNullMove(pos);
+            // Cutoff
+            if (score >= beta)
+                // Don't return unproven terminal win scores
+                return isWin(score) ? beta : score;
+        }
 
-        // Cutoff
-        if (score >= beta)
-            // Don't return unproven terminal win scores
-            return isWin(score) ? beta : score;
-    }
+        int probCutBeta = beta + 200;
 
-    int probCutBeta = beta + 200;
+        // ProbCut
+        if (depth >= 5
+            && (!ttHit || ttScore >= probCutBeta)) {
 
-    // ProbCut
-    if (   depth >= 5
-        && (!ttHit || ttScore >= probCutBeta)) {
+            InitProbcutMP(&mp, thread, ss, probCutBeta - ss->staticEval);
 
-        InitProbcutMP(&mp, thread, ss, probCutBeta - ss->staticEval);
+            Move move;
+            while ((move = NextMove(&mp))) {
 
-        Move move;
-        while ((move = NextMove(&mp))) {
+                if (mp.stage > NOISY_GOOD) break;
 
-            if (mp.stage > NOISY_GOOD) break;
+                if (!MoveIsLegal(pos, move)) continue;
+                MakeMove(pos, move);
 
-            if (!MoveIsLegal(pos, move)) continue;
-            MakeMove(pos, move);
+                ss->move = move;
+                ss->continuation = &thread->continuation[inCheck][moveIsCapture(move)][piece(move)][toSq(move)];
+                ss->contCorr = &thread->contCorrHistory[piece(move)][toSq(move)];
 
-            ss->move = move;
-            ss->continuation = &thread->continuation[inCheck][moveIsCapture(move)][piece(move)][toSq(move)];
-            ss->contCorr = &thread->contCorrHistory[piece(move)][toSq(move)];
+                // See if a quiescence search beats the threshold
+                int score = -Quiescence(thread, ss + 1, -probCutBeta, -probCutBeta + 1);
 
-            // See if a quiescence search beats the threshold
-            int score = -Quiescence(thread, ss+1, -probCutBeta, -probCutBeta+1);
+                // If it did, do a proper search with reduced depth
+                if (score >= probCutBeta)
+                    score = -AlphaBeta(thread, ss + 1, -probCutBeta, -probCutBeta + 1, depth - 4, !cutnode);
 
-            // If it did, do a proper search with reduced depth
-            if (score >= probCutBeta)
-                score = -AlphaBeta(thread, ss+1, -probCutBeta, -probCutBeta+1, depth-4, !cutnode);
+                TakeMove(pos);
 
-            TakeMove(pos);
-
-            // Cut if the reduced depth search beats the threshold, terminal scores are exact
-            if (score >= probCutBeta)
-                return isWin(score) ? score : score - 160;
+                // Cut if the reduced depth search beats the threshold, terminal scores are exact
+                if (score >= probCutBeta)
+                    return isWin(score) ? score : score - 160;
+            }
         }
     }
-    }
-
-move_loop:
 
     InitNormalMP(&mp, thread, ss, depth, ttMove, ss->killer);
 
@@ -715,9 +712,8 @@ static void AspirationWindow(Thread *thread, Stack *ss) {
 }
 
 // Iterative deepening
-static void *IterativeDeepening(void *voidThread) {
-
-    Thread *thread = (Thread*)voidThread;
+static void IterativeDeepening(Thread* thread) 
+{
     Position *pos = &thread->pos;
     Stack *ss = thread->ss+SS_OFFSET;
     bool mainThread = thread->index == 0;
@@ -771,14 +767,11 @@ static void *IterativeDeepening(void *voidThread) {
             thread->depth--;
         PrintThinking(thread, -INFINITE, INFINITE);
     }
-
-    return NULL;
 }
 
 // Root of search
-void *SearchPosition(void *_pos) {
-    Position* pos = (Position*)_pos;
-
+void SearchPosition(Position* pos) 
+{
     SEARCH_STOPPED = false;
 
     InitTimeManagement();
@@ -805,12 +798,10 @@ conclusion:
     WaitForHelpers();
 
     // Print the best move found
-    PrintBestMove(Threads->rootMoves[0].move);
+    PrintBestMove(Threads[0].rootMoves[0].move);
 
     SEARCH_STOPPED = true;
 
     // Wake up waiting UCI thread
     Wake();
-
-    return NULL;
 }

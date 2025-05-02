@@ -87,14 +87,14 @@ static const char *BenchmarkFENs[] = {
 };
 
 typedef struct BenchResult {
-    TimePoint elapsed;
+    int64_t elapsed;
     uint64_t nodes;
     int score;
     Move best;
 } BenchResult;
 
-void Benchmark(int argc, char **argv) {
-
+void Benchmark(int argc, char **argv) 
+{
     // Default depth 16, 1 thread, and 32MB hash
     Limits.depth     = argc > 2 ? atoi(argv[2]) : 16;
     int threadCount  = argc > 3 ? atoi(argv[3]) : 1;
@@ -104,13 +104,13 @@ void Benchmark(int argc, char **argv) {
     InitThreads(threadCount);
     InitTT();
 
-    int FENCount = sizeof(BenchmarkFENs) / sizeof(char *);
+    constexpr int FENCount = sizeof(BenchmarkFENs) / sizeof(char *);
     BenchResult results[FENCount];
-    TimePoint totalElapsed = 1; // Avoid possible div/0
+    int64_t totalElapsed = 1; // Avoid possible div/0
     uint64_t totalNodes = 0;
 
-    for (int i = 0; i < FENCount; ++i) {
-
+    for (int i = 0; i < FENCount; ++i) 
+    {
         printf("[# %2d] %s\n", i + 1, BenchmarkFENs[i]);
 
         // Search
@@ -123,8 +123,8 @@ void Benchmark(int argc, char **argv) {
         BenchResult *r = &results[i];
         r->elapsed = TimeSince(Limits.start);
         r->nodes   = TotalNodes();
-        r->score   = Threads->rootMoves[0].score;
-        r->best    = Threads->rootMoves[0].move;
+        r->score = Threads[0].rootMoves[0].score;
+        r->best = Threads[0].rootMoves[0].move;
 
         totalElapsed += r->elapsed;
         totalNodes   += r->nodes;
@@ -173,11 +173,11 @@ static uint64_t RecursivePerft(Position *pos, const Depth depth) {
 // Counts number of moves that can be made in a position to some depth
 void Perft(char *str) {
 
-    const char *default_fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
+    char *default_fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
 
     strtok(str, " ");
     char *d = strtok(NULL, " ");
-    const char *fen = strtok(NULL, "\0") ?: default_fen;
+    char *fen = strtok(NULL, "\0") ?: default_fen;
 
     Depth depth = d ? atoi(d) : 5;
     ParseFen(fen, &Threads->pos);
@@ -185,9 +185,9 @@ void Perft(char *str) {
     printf("\nPerft starting:\nDepth : %d\nFEN   : %s\n", depth, fen);
     fflush(stdout);
 
-    const TimePoint start = Now();
+    const std::time_point start = Now();
     uint64_t leafNodes = RecursivePerft(&Threads->pos, depth);
-    const TimePoint elapsed = TimeSince(start) + 1;
+    const std::time_point elapsed = TimeSince(start) + 1;
 
     printf("\nPerft complete:"
            "\nTime : %" PRId64 "ms"

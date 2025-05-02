@@ -24,7 +24,7 @@
 #include "endgame.h"
 
 
-Endgame EndgameTable[ENDGAME_TABLE_SIZE] = {};
+Endgame EndgameTable[ENDGAME_TABLE_SIZE] = { 0 };
 
 
 // Generates a material key from a string like "KRPkr"
@@ -42,7 +42,7 @@ static Key GenMaterialKey(const char *white, const char *black) {
     return pos.materialKey;
 }
 
-static int TrivialDraw(__attribute__((unused)) const Position *pos, __attribute__((unused)) Color color) {
+static int TrivialDraw(const Position *, Color) {
     return 0;
 }
 
@@ -57,10 +57,10 @@ static void AddEndgame(const char *white, const char *black, SpecializedEval ef)
         exit(0);
     }
 
-    *eg = (Endgame) { key, ef };
+    *eg = { key, ef };
 }
 
-CONSTR(3) InitEndgames() {
+CONSTR(InitEndgames, 3) {
     // King vs king
     AddEndgame("K", "k", &TrivialDraw);
 

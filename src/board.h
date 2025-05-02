@@ -32,7 +32,7 @@ typedef struct {
 } History;
 
 typedef struct Position {
-    uint8_t board[64];
+    Piece board[64];
     Bitboard pieceBB[7];
     Bitboard colorBB[COLOR_NB];
     Bitboard checkers;
@@ -95,18 +95,18 @@ INLINE bool ValidPiece(const Piece piece) { return (wP <= piece && piece <= wK) 
 INLINE bool ValidCapture(const Piece capt) { return (wP <= capt && capt <= wQ) || (bP <= capt && capt <= bQ); }
 INLINE bool ValidPromotion(const Piece promo) { return (wN <= promo && promo <= wQ) || (bN <= promo && promo <= bQ); }
 
-INLINE Color ColorOf(Piece piece) { return piece >> 3;}
-INLINE PieceType PieceTypeOf(Piece piece) { return piece & 7; }
-INLINE Piece MakePiece(Color color, PieceType pt) { return (color << 3) + pt; }
+INLINE Color ColorOf(Piece piece) { return Color(piece >> 3);}
+INLINE PieceType PieceTypeOf(Piece piece) { return PieceType(piece & 7); }
+INLINE Piece MakePiece(Color color, PieceType pt) { return Piece((color << 3) + pt); }
 
 int Distance(const Square sq1, const Square sq2);
-INLINE Square MirrorSquare(const Square sq) { return sq ^ 56; } // Mirrors a square horizontally
+INLINE Square MirrorSquare(const Square sq) { return Square(sq ^ 56); } // Mirrors a square horizontally
 INLINE Square RelativeSquare(const Color color, const Square sq) { return color == WHITE ? sq : MirrorSquare(sq); }
 INLINE Square BlackRelativeSquare(const Color color, const Square sq) { return color == BLACK ? sq : MirrorSquare(sq); }
-INLINE int FileOf(Square square) { return square & 7; }
-INLINE int RankOf(Square square) { return square >> 3; }
+constexpr INLINE int FileOf(Square square) { return square & 7; }
+constexpr INLINE int RankOf(Square square) { return square >> 3; }
 INLINE int RelativeRank(Color color, int rank) { return color == WHITE ? rank : RANK_8 - rank; }
-INLINE Square MakeSquare(int rank, int file) { return (rank * FILE_NB) + file; }
+INLINE Square MakeSquare(int rank, int file) { return Square((rank * FILE_NB) + file); }
 INLINE Square StrToSq(const char *str) { return MakeSquare(str[1] - '1', str[0] - 'a'); }
 
 INLINE void SqToStr(Square sq, char *str) {

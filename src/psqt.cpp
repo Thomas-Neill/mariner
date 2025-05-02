@@ -21,6 +21,11 @@
 #include "psqt.h"
 
 
+// Piecetype values, combines with PSQTs [piecetype]
+const int PieceTypeValue[TYPE_NB] = {
+    0, S(P_MG, P_EG), S(N_MG, N_EG), S(B_MG, B_EG), S(R_MG, R_EG), S(Q_MG, Q_EG), 0, 0
+};
+
 
 int PSQT[PIECE_NB][64];
 
@@ -83,7 +88,7 @@ const int PieceSqValue[6][64] = {
 };
 
 // Initialize the piece square tables with piece values included
-CONSTR(1) InitPSQT() {
+CONSTR(InitPSQT, 1) {
     for (PieceType pt = PAWN; pt <= KING; ++pt)
         for (Square sq = A1; sq <= H8; ++sq) {
             int value = PieceTypeValue[pt] + PieceSqValue[pt-1][sq];

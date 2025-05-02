@@ -21,10 +21,11 @@
 #include "types.h"
 
 
-typedef int32_t MPStage;
-enum {
+typedef enum MPStage {
     TTMOVE, GEN_NOISY, NOISY_GOOD, KILLER, GEN_QUIET, QUIET, NOISY_BAD
-};
+} MPStage;
+
+inline MPStage& operator++(MPStage& s) { return s = MPStage(s + 1); }
 
 typedef struct MovePicker {
     Thread *thread;

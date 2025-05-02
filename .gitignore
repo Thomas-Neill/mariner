@@ -42,6 +42,10 @@ weiss
 *.so.*
 *.dylib
 
+# Windows directories
+x64/
+.vs/
+
 # Executables
 *.exe
 *.out

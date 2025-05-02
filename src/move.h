@@ -52,11 +52,11 @@
 #define MOVE(f, t, pc, ca, pro, fl) ((f) | ((t) << 6) | ((pc) << 12) | ((ca) << 16) | ((pro) << 20) | (fl))
 
 // Extract info from a move
-#define fromSq(move)     ((move) & MOVE_FROM)
-#define toSq(move)      (((move) & MOVE_TO)    >>  6)
-#define piece(move)     (((move) & MOVE_PIECE) >> 12)
-#define capturing(move) (((move) & MOVE_CAPT)  >> 16)
-#define promotion(move) (((move) & MOVE_PROMO) >> 20)
+#define fromSq(move)     Square((move) & MOVE_FROM)
+#define toSq(move)      Square(((move) & MOVE_TO)    >>  6)
+#define piece(move)     Piece(((move) & MOVE_PIECE) >> 12)
+#define capturing(move) Piece(((move) & MOVE_CAPT)  >> 16)
+#define promotion(move) Piece(((move) & MOVE_PROMO) >> 20)
 
 // Move types
 #define moveIsEnPas(move)   ((bool)(move & FLAG_ENPAS))

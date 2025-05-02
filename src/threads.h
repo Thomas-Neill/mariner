@@ -19,6 +19,7 @@
 #pragma once
 
 #include <setjmp.h>
+#include <vector>
 
 #include "board.h"
 #include "evaluate.h"
@@ -90,7 +91,7 @@ typedef struct Thread {
 } Thread;
 
 
-extern Thread *Threads;
+extern std::vector<Thread> Threads;
 
 
 void InitThreads(int threadCount);
@@ -98,10 +99,9 @@ void SortRootMoves(Thread *thread, int begin);
 uint64_t TotalNodes();
 uint64_t TotalTBHits();
 void PrepareSearch(Position *pos, Move searchmoves[]);
-void StartMainThread(void *(*func)(void *), Position *pos);
-void StartHelpers(void *(*func)(void *));
+void StartHelpers(void (*func)(Thread*));
 void WaitForHelpers();
 void ResetThreads();
-void RunWithAllThreads(void *(*func)(void *));
-void Wait(std::atomic_bool *condition);
+void RunWithAllThreads(void *(*func)(Thread *));
+void Wait(atomic_bool *condition);
 void Wake();

@@ -19,6 +19,9 @@
 #pragma once
 
 #include <math.h>
+#ifdef _MSC_VER
+#include "xmmintrin.h"
+#endif
 
 #include "threads.h"
 #include "types.h"
@@ -101,7 +104,9 @@ INLINE bool TTScoreIsMoreInformative(uint8_t bound, int ttScore, int score) {
 }
 
 INLINE uint64_t TTIndex(Key key) {
-    return ((unsigned __int128)key * (unsigned __int128)TT.count) >> 64;
+    // top 64 bits of 128-bit product
+    constexpr uint64_t HI = 0xFFFFFFFF00000000, LO = HI >> 32;
+    return (((key & HI) >> 32) * ((TT.count & HI) >> 32) + ((key & LO) * ((TT.count & HI) >> 32) + ((key & HI) >> 32) * (TT.count & LO))) >> 32;
 }
 
 INLINE TTBucket *GetTTBucket(Key key) {
@@ -109,8 +114,17 @@ INLINE TTBucket *GetTTBucket(Key key) {
     return &TT.table[TTIndex(key)];
 }
 
+template<class T> void prefetch(T* p)
+{
+#ifdef _MSC_VER
+    _mm_prefetch(reinterpret_cast<const char*>(p), _MM_HINT_NTA);
+#else
+    __builtin_prefetch(p);
+#endif
+}
+
 INLINE void TTPrefetch(Key key) {
-    __builtin_prefetch(GetTTBucket(key));
+    prefetch(GetTTBucket(key));
 }
 
 INLINE void RequestTTSize(int megabytes) {

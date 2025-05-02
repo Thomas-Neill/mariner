@@ -18,7 +18,7 @@
 
 #include <ctype.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 
 #include "bitboard.h"
 #include "board.h"
@@ -28,8 +28,6 @@
 
 
 bool Chess960 = false;
-
-uint8_t SqDistance[64][64];
 
 const int NonPawn[PIECE_NB] = {
     false, false,  true,  true,  true,  true, false, false,
@@ -41,23 +39,32 @@ uint64_t PieceKeys[PIECE_NB][64];
 uint64_t CastleKeys[16];
 uint64_t SideKey;
 
-static const char PieceChars[] = ".PNBRQK..pnbrqk";
+static const std::string PieceChars = ".PNBRQK..pnbrqk";
+Piece PieceFromChar(char c)
+{
+    return Piece(PieceChars.find(c));
+}
 
 uint8_t CastlePerm[64];
 Bitboard CastlePath[16];
 Square RookSquare[16];
 
-
+INLINE constexpr int c_abs(int x) { return x > 0 ? x : -x; }
+INLINE constexpr int Dist(Square x, Square y)
+{
+    return std::max(c_abs(RankOf(x) - RankOf(y)), c_abs(FileOf(x) - FileOf(y)));
+}
 // Initialize distance lookup table
-CONSTR(1) InitDistance() {
+constexpr std::array<std::array<uint8_t, 64>, 64> InitDistance()
+{
+    std::array<std::array<uint8_t, 64>, 64> retval;
     for (Square sq1 = A1; sq1 <= H8; ++sq1)
         for (Square sq2 = A1; sq2 <= H8; ++sq2) {
-            int vertical   = abs(RankOf(sq1) - RankOf(sq2));
-            int horizontal = abs(FileOf(sq1) - FileOf(sq2));
-            SqDistance[sq1][sq2] = MAX(vertical, horizontal);
+            retval[sq1][sq2] = Dist(sq1, sq2);
         }
+    return retval;
 }
-
+constexpr std::array<std::array<uint8_t, 64>, 64> SqDistance = InitDistance();
 int Distance(Square sq1, Square sq2) { return SqDistance[sq1][sq2]; }
 
 // Pseudo-random number generator
@@ -75,8 +82,8 @@ static uint64_t Rand64() {
 }
 
 // Inits zobrist key tables
-CONSTR(1) InitHashKeys() {
-
+CONSTR(InitHashKeys, 1) 
+{
     // Side to play
     SideKey = Rand64();
 
@@ -100,8 +107,8 @@ CONSTR(1) InitHashKeys() {
 }
 
 // Generates a hash key from scratch
-static Key GenPosKey(const Position *pos) {
-
+static Key GenPosKey(const Position *pos) 
+{
     Key key = 0;
 
     for (Square sq = A1; sq <= H8; ++sq)
@@ -223,20 +230,21 @@ static void InitCastlingRight(Position *pos, Color color, int file) {
 }
 
 // Parse FEN and set up the position as described
-void ParseFen(const char *fen, Position *pos) {
-
+void ParseFen(const char *fen, Position *pos) 
+{
     memset(pos, 0, sizeof(Position));
-    char c, *copy = strdup(fen);
+    char c;
+    char *copy = _strdup(fen);
     char *token = strtok(copy, " ");
 
     // Piece locations
-    Square sq = A8;
+    int sq = A8;
     while ((c = *token++))
-        switch (c) {
-            case '/': sq -= 16; break;
-            case '1' ... '8': sq += c - '0'; break;
-            default: AddPiece(pos, sq++, strchr(PieceChars, c) - PieceChars);
-        }
+    {
+        if (c == '/') { sq -= 16; }
+        else if (c >= '1' && c <= '8') { sq += c - '0'; }
+        else { AddPiece(pos, Square(sq), PieceFromChar(c)); ++sq; }
+    }
 
     // Side to move
     sideToMove = *strtok(NULL, " ") == 'w' ? WHITE : BLACK;
@@ -246,16 +254,15 @@ void ParseFen(const char *fen, Position *pos) {
         CastlePerm[sq] = ALL_CASTLE;
 
     token = strtok(NULL, " ");
-    while ((c = *token++)) {
+    while (c = *token++) {
         Square rsq;
         Color color = islower(c) ? BLACK : WHITE;
         c = toupper(c);
-        switch (c) {
-            case 'K': for (rsq = RelativeSquare(color, H1); pieceTypeOn(rsq) != ROOK; --rsq); break;
-            case 'Q': for (rsq = RelativeSquare(color, A1); pieceTypeOn(rsq) != ROOK; ++rsq); break;
-            case 'A' ... 'H': rsq = RelativeSquare(color, MakeSquare(RANK_1, c - 'A')); break;
-            default: continue;
-        }
+        if (c == 'K') { for (rsq = RelativeSquare(color, H1); pieceTypeOn(rsq) != ROOK; --rsq); }
+        else if (c == 'Q') { for (rsq = RelativeSquare(color, A1); pieceTypeOn(rsq) != ROOK; ++rsq); }
+        else if (c >= 'A' && c < 'H') { rsq = RelativeSquare(color, MakeSquare(RANK_1, c - 'A')); }
+        else continue;
+
         InitCastlingRight(pos, color, FileOf(rsq));
     }
 
@@ -264,7 +271,7 @@ void ParseFen(const char *fen, Position *pos) {
     if (*token != '-') {
         Square ep = StrToSq(token);
         bool usable = PawnAttackBB(!sideToMove, ep) & colorPieceBB(sideToMove, PAWN);
-        pos->epSquare = usable ? ep : 0;
+        pos->epSquare = usable ? ep : Square(0);
     }
 
     // 50 move rule and game moves
@@ -419,20 +426,14 @@ static Move cuckooMove[8192];
 INLINE uint32_t Hash1(Key hash) { return  hash        & 0x1fff; }
 INLINE uint32_t Hash2(Key hash) { return (hash >> 16) & 0x1fff; }
 
-#define Swap(x, y) {    \
-    typeof(x) temp = x; \
-    x = y;              \
-    y = temp;           \
-}
-
-CONSTR(3) InitCuckoo() {
+CONSTR(InitCuckoo, 3) {
     int validate = 0;
 
-    for (Color c = WHITE; c <= BLACK; c++)
+    for (Color c = WHITE; c <= BLACK; ++c)
         for (PieceType pt = KNIGHT; pt <= KING; ++pt)
-            for (Square sq1 = A1; sq1 <= H8; sq1++)
-                for (Square sq2 = sq1 + 1; sq2 <= H8; sq2++) {
-
+            for (Square sq1 = A1; sq1 <= H8; ++sq1)
+                for (Square sq2 = Square(sq1 + 1); sq2 <= H8; ++sq2) 
+                {
                     if (!(AttackBB(pt, sq1, 0) & BB(sq2)))
                         continue;
 
@@ -452,7 +453,7 @@ CONSTR(3) InitCuckoo() {
                     }
 
                     validate++;
-                }
+                 }
 
     if (validate != 3668)
         puts("Failed to set cuckoo tables."), exit(1);
@@ -478,7 +479,7 @@ bool HasCycle(const Position *pos, int ply) {
             if (ply > i)
                 return true;
 
-            if (ColorOf(pieceOn(from) ?: pieceOn(to)) != sideToMove)
+            if (ColorOf(pieceOn(from) ? pieceOn(from) : pieceOn(to)) != sideToMove)
                 continue;
 
             for (int k = i + 4; k <= pos->rule50; k += 2) {
@@ -520,7 +521,7 @@ static Key GenPawnKey(const Position *pos) {
 
     Key key = 0;
 
-    for (Color c = WHITE; c <= BLACK; c++) {
+    for (Color c = WHITE; c <= BLACK; ++c) {
         Bitboard pawns = colorPieceBB(c, PAWN);
         while (pawns)
             key ^= PieceKeys[MakePiece(c, PAWN)][PopLsb(&pawns)];
@@ -530,8 +531,8 @@ static Key GenPawnKey(const Position *pos) {
 }
 
 // Check board state makes sense
-bool PositionOk(const Position *pos) {
-
+bool PositionOk(const Position *pos) 
+{
     assert(0 <= pos->histPly && pos->histPly < 256);
 
     int counts[PIECE_NB] = { 0 };

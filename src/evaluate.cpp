@@ -37,11 +37,6 @@ typedef struct EvalInfo {
 // Phase value for each piece [piecetype]
 const int PhaseValue[TYPE_NB] = { 0, 0, 1, 1, 2, 4, 0, 0 };
 
-// Piecetype values, combines with PSQTs [piecetype]
-const int PieceTypeValue[TYPE_NB] = {
-    0, S(P_MG, P_EG), S(N_MG, N_EG), S(B_MG, B_EG), S(R_MG, R_EG), S(Q_MG, Q_EG), 0, 0
-};
-
 // Phase piece values, lookup used for futility pruning [phase][piece]
 const int PieceValue[2][PIECE_NB] = {
     { 0, P_MG, N_MG, B_MG, R_MG, Q_MG, 0, 0,
@@ -380,7 +375,7 @@ INLINE int EvalPassedPawns(const Position *pos, const EvalInfo *ei, const Color 
     while (passers) {
 
         Square sq = PopLsb(&passers);
-        Square forward = sq + up;
+        Square forward = Square(sq + up);
         int rank = RelativeRank(color, RankOf(sq));
         int file = FileOf(sq);
         int r = rank - RANK_4;

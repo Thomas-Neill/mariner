@@ -18,12 +18,13 @@
 
 #pragma once
 
-#include "board.h"
 #include "types.h"
+#include "board.h"
+#include "time.h"
 
 
 typedef struct {
-    TimePoint start;
+    time_point start;
     int time, inc, movestogo, movetime, depth;
     uint64_t nodes;
     int optimalUsage, maxUsage;
@@ -35,9 +36,9 @@ typedef struct {
 
 
 extern SearchLimits Limits;
-extern std::atomic_bool ABORT_SIGNAL;
-extern std::atomic_bool SEARCH_STOPPED;
-extern std::atomic_bool Minimal;
+extern atomic_bool ABORT_SIGNAL;
+extern atomic_bool SEARCH_STOPPED;
+extern atomic_bool Minimal;
 
 
-void *SearchPosition(void *pos);
+void SearchPosition(Position* pos);

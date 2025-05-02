@@ -17,7 +17,6 @@
 */
 
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 
 #ifdef _WIN32
@@ -45,8 +44,8 @@
 
 static void error(const char *msg) { perror(msg); exit(0); }
 
-char *Query(const char *hostname, char *message) {
-
+char *Query(const char *hostname, char *message) 
+{
     // Setup sockets on windows, does nothing on linux
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0)
@@ -90,7 +89,11 @@ char *Query(const char *hostname, char *message) {
         error("ERROR receiving");
 
     // Cleanup
+#ifdef _MSC_VER
+    closesocket(sockfd);
+#else
     close(sockfd);
+#endif
     WSACleanup();
 
     return puts("info string Query: Response received"), response;

@@ -20,18 +20,28 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <stdatomic.h>
+#include <stdbool.h>
 #include <stdio.h>
-#include <atomic>
 
 
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
 #define CLAMP(x, low, high)  (MIN((high), MAX((x), (low))))
 
-#define INLINE static inline __attribute__((always_inline))
-#define CONSTR(prio) static __attribute__((constructor (1000 + prio))) void
+#define INLINE __forceinline
 
-#define loadRelaxed(x) atomic_load_explicit(&(x), std::memory_order_relaxed)
+#ifdef _MSC_VER
+#define CONSTR(func, prio)                      \
+    void func();                                \
+    struct Do##func{ Do##func() { func(); } };    \
+    static Do##func The##func;                    \
+    void func()
+#else
+#define CONSTR(func, prio) static __attribute__((constructor (1000 + prio))) void func()
+#endif
+
+#define loadRelaxed(x) atomic_load_explicit(&(x), memory_order_relaxed)
 
 #define lastMoveNullMove (!root && (ss-1)->move == NOMOVE)
 #define history(offset) (pos->gameHistory[pos->histPly + offset])
@@ -41,9 +51,10 @@
 #define colorBB(color) (pos->colorBB[(color)])
 #define colorPieceBB(color, type) (colorBB(color) & pieceBB(type))
 #define sideToMove (pos->stm)
+
 #define pieceOn(sq) (pos->board[sq])
 #define pieceTypeOn(sq) (PieceTypeOf(pieceOn(sq)))
-#define kingSq(color) (Lsb(colorPieceBB(color, KING)))
+#define kingSq(color) Square(Lsb(colorPieceBB(color, KING)))
 
 #define isLoss(score) (score <= -TBWIN_IN_MAX)
 #define isWin(score)  (score >=  TBWIN_IN_MAX)
@@ -57,22 +68,15 @@ typedef uint64_t Bitboard;
 typedef uint64_t Key;
 
 typedef uint32_t Move;
-typedef uint32_t Square;
-
-typedef int64_t TimePoint;
 
 typedef int32_t Depth;
-typedef int32_t Color;
-typedef int32_t Piece;
-typedef int32_t PieceType;
-typedef int32_t Direction;
 
 
 enum {
     MAX_PLY = 100
 };
 
-enum { // Score
+enum Score {
     TBWIN        = 30000,
     TBWIN_IN_MAX = TBWIN - 999,
 
@@ -83,20 +87,25 @@ enum { // Score
     NOSCORE  = MATE + 2,
 };
 
-enum { // Color
+enum Color {
     WHITE, BLACK, COLOR_NB
 };
+INLINE Color operator!(Color c) { return Color(1 ^ c); }
+INLINE Color operator++(Color& c) { return c = Color(c + 1); }
+INLINE Color& Reverse(Color& c) { return c = Color(1 ^ c); }
 
-enum { // PieceType
+enum PieceType {
     ALL, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, TYPE_NB = 8
 };
+INLINE PieceType operator++(PieceType& pt) { return pt = PieceType(pt + 1); }
 
-enum { // Piece
+enum Piece {
     EMPTY,
     wP = 1, wN, wB, wR, wQ, wK,
     bP = 9, bN, bB, bR, bQ, bK,
     PIECE_NB = 16
 };
+INLINE Piece operator++(Piece& p) { return p = Piece(p + 1); }
 
 enum PieceValue {
     P_MG =  104, P_EG =  204,
@@ -114,7 +123,7 @@ enum Rank {
     RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, RANK_NB
 };
 
-enum { // Square
+enum Square {
     A1, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
     A3, B3, C3, D3, E3, F3, G3, H3,
@@ -124,15 +133,18 @@ enum { // Square
     A7, B7, C7, D7, E7, F7, G7, H7,
     A8, B8, C8, D8, E8, F8, G8, H8
 };
+constexpr inline Square operator++(Square& s) { return s = Square(s + 1); }
+inline Square operator--(Square& s) { return s = Square(s - 1); }
+inline Square operator^(Square s, int ii) { return Square(int(s) ^ ii); }
 
-enum { // Direction
+typedef enum Direction {
     NORTH = 8,
     EAST  = 1,
     SOUTH = -NORTH,
     WEST  = -EAST
-};
+} Direction;
 
-enum { // CastlingRights
+enum CastlingRights {
     WHITE_OO  = 1,
     WHITE_OOO = 2,
     BLACK_OO  = 4,

@@ -131,7 +131,7 @@ Move ParseMove(const char *str, const Position *pos) {
                 : str[4] == 'n' ? MakePiece(sideToMove, KNIGHT)
                 : str[4] == 'r' ? MakePiece(sideToMove, ROOK)
                 : str[4] == 'b' ? MakePiece(sideToMove, BISHOP)
-                                : 0;
+                                : Piece(0);
 
     PieceType pt = pieceTypeOn(from);
 

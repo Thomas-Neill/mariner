@@ -33,7 +33,7 @@ INLINE void AddMove(const Position *pos, MoveList *list, const Square from, cons
 INLINE void AddPromotions(const Position *pos, MoveList *list, const Color color, const int type, Bitboard moves, const Direction dir) {
     while (moves) {
         Square to = PopLsb(&moves);
-        Square from = to - dir;
+        Square from = Square(to - dir);
 
         if (type == NOISY)
             AddMove(pos, list, from, to, MakePiece(color, QUEEN), FLAG_NONE);
@@ -50,7 +50,7 @@ INLINE void AddPromotions(const Position *pos, MoveList *list, const Color color
 INLINE void AddPawnMoves(const Position *pos, MoveList *list, Bitboard moves, const Direction dir, const int flag) {
     while (moves) {
         Square to = PopLsb(&moves);
-        AddMove(pos, list, to - dir, to, EMPTY, flag);
+        AddMove(pos, list, Square(to - dir), to, EMPTY, flag);
     }
 }
 
@@ -80,7 +80,7 @@ INLINE void GenPawn(const Position *pos, MoveList *list, const Color color, cons
     const Direction right = color == WHITE ? EAST  : WEST;
 
     const Bitboard empty   = ~pieceBB(ALL);
-    const Bitboard enemies = pos->checkers ?: colorBB(!color);
+    const Bitboard enemies = pos->checkers ? pos->checkers : colorBB(!color);
     const Bitboard pawns   = colorPieceBB(color, PAWN);
     const Bitboard promo   = rank8BB | rank1BB;
     const Bitboard normal  = ~promo;
@@ -100,21 +100,21 @@ INLINE void GenPawn(const Position *pos, MoveList *list, const Color color, cons
             doubles &= BetweenBB[kingSq(color)][Lsb(pos->checkers)];
 
         AddPawnMoves(pos, list, moves, up, FLAG_NONE);
-        AddPawnMoves(pos, list, doubles, up * 2, FLAG_PAWNSTART);
+        AddPawnMoves(pos, list, doubles, Direction(up * 2), FLAG_PAWNSTART);
     }
 
     // Promotions
-    AddPromotions(pos, list, color, type, lCap & promo, up+left);
-    AddPromotions(pos, list, color, type, rCap & promo, up+right);
+    AddPromotions(pos, list, color, type, lCap & promo, Direction(up+left));
+    AddPromotions(pos, list, color, type, rCap & promo, Direction(up+right));
     Bitboard pushPromos = push & promo;
     if (pos->checkers) pushPromos &= BetweenBB[kingSq(color)][Lsb(pos->checkers)];
     AddPromotions(pos, list, color, type, pushPromos, up);
 
     // Captures
-    if (type == NOISY) {
-
-        AddPawnMoves(pos, list, lCap & normal, up+left,  FLAG_NONE);
-        AddPawnMoves(pos, list, rCap & normal, up+right, FLAG_NONE);
+    if (type == NOISY) 
+    {
+        AddPawnMoves(pos, list, lCap & normal, Direction(up+left),  FLAG_NONE);
+        AddPawnMoves(pos, list, rCap & normal, Direction(up+right), FLAG_NONE);
 
         // En passant
         if (pos->epSquare) {

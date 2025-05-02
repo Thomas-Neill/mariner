@@ -35,8 +35,8 @@
 
 
 // Parses the time controls
-static void ParseTimeControl(const char *str, const Position *pos) {
-
+static void ParseTimeControl(char *str, const Position *pos) 
+{
     memset(&Limits, 0, offsetof(SearchLimits, multiPV));
     Limits.start = Now();
 
@@ -51,16 +51,16 @@ static void ParseTimeControl(const char *str, const Position *pos) {
     SetLimit(str, "mate",      &Limits.mate);
 
     // Parse searchmoves, assumes they are at the end of the string
-    char *searchmoves = (char*)strstr(str, "searchmoves ");
+    char *searchmoves = strstr(str, "searchmoves ");
     if (searchmoves) {
-        char *move = strtok(searchmoves, " ");
+        const char *move = strtok(searchmoves, " ");
         for (int i = 0; (move = strtok(NULL, " ")); ++i)
             Limits.searchmoves[i] = ParseMove(move, pos);
     }
 
     Limits.timelimit = Limits.time || Limits.movetime;
     Limits.nodeTime = Limits.nodes;
-    Limits.depth = Limits.depth ?: 100;
+    Limits.depth = Limits.depth ? Limits.depth : 100;
 }
 
 // Parses the given limits and creates a new thread to start the search
@@ -68,12 +68,14 @@ INLINE void Go(Position *pos, char *str) {
     ABORT_SIGNAL = false;
     InitTT();
     ParseTimeControl(str, pos);
-    StartMainThread(SearchPosition, pos);
+    // Start the main thread running the provided function
+    std::thread t(SearchPosition, pos);
+    t.detach();
 }
 
 // Parses a 'position' and sets up the board
-static void Pos(Position *pos, char *str) {
-
+static void Pos(Position *pos, char *str) 
+{
     bool isFen = !strncmp(str, "position fen", 12);
 
     // Set up original position. This will either be a
@@ -183,8 +185,8 @@ static int HashInput(char *str) {
 }
 
 // Sets up the engine and follows UCI protocol commands
-int main(int argc, char **argv) {
-
+int main(int argc, char **argv) 
+{
     // Benchmark
     if (argc > 1 && strstr(argv[1], "bench"))
         return Benchmark(argc, argv), 0;
@@ -229,11 +231,11 @@ INLINE int MateScore(const int score) {
 }
 
 // Print thinking
-void PrintThinking(const Thread *thread, int alpha, int beta) {
-
+void PrintThinking(const Thread *thread, int alpha, int beta) 
+{
     const Position *pos = &thread->pos;
 
-    TimePoint elapsed = TimeSince(Limits.start);
+    int elapsed = TimeSince(Limits.start);
     uint64_t nodes    = TotalNodes();
     uint64_t tbhits   = TotalTBHits();
     int hashFull      = HashFull();
@@ -266,7 +268,7 @@ void PrintThinking(const Thread *thread, int alpha, int beta) {
                                     : score;
 
         // Basic info
-        printf("info depth %d seldepth %d multipv %d score %s %d%s time %" PRId64
+        printf("info depth %d seldepth %d multipv %d score %s %d%s time %d"
                " nodes %" PRIu64 " nps %d tbhits %" PRIu64 " hashfull %d pv",
                 thread->depth, seldepth, i+1, type, score, bound, elapsed,
                 nodes, nps, tbhits, hashFull);

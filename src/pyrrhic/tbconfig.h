@@ -44,12 +44,12 @@
 #define PYRRHIC_LSB(x)                   (Lsb(x))
 #define PYRRHIC_POPLSB(x)                (PopLsb(x))
 
-#define PYRRHIC_PAWN_ATTACKS(sq, c)      (PawnAttackBB(!c, sq))
-#define PYRRHIC_KNIGHT_ATTACKS(sq)       (AttackBB(KNIGHT, sq, 0ull))
-#define PYRRHIC_BISHOP_ATTACKS(sq, occ)  (AttackBB(BISHOP, sq, occ))
-#define PYRRHIC_ROOK_ATTACKS(sq, occ)    (AttackBB(ROOK, sq, occ))
-#define PYRRHIC_QUEEN_ATTACKS(sq, occ)   (AttackBB(QUEEN, sq, occ))
-#define PYRRHIC_KING_ATTACKS(sq)         (AttackBB(KING, sq, 0ull))
+#define PYRRHIC_PAWN_ATTACKS(sq, c)      (PawnAttackBB(Color(!c), Square(sq)))
+#define PYRRHIC_KNIGHT_ATTACKS(sq)       (AttackBB(KNIGHT, Square(sq), 0ull))
+#define PYRRHIC_BISHOP_ATTACKS(sq, occ)  (AttackBB(BISHOP, Square(sq), occ))
+#define PYRRHIC_ROOK_ATTACKS(sq, occ)    (AttackBB(ROOK, Square(sq), occ))
+#define PYRRHIC_QUEEN_ATTACKS(sq, occ)   (AttackBB(QUEEN, Square(sq), occ))
+#define PYRRHIC_KING_ATTACKS(sq)         (AttackBB(KING, Square(sq), 0ull))
 
 /*
  * Pyrrhic can produce scores for tablebase moves. These depend on the value

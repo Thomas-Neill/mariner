@@ -54,7 +54,7 @@ bool ProbeNoob(const Position *pos) {
     if (strstr(response, "move") != response)
         return printf("info string NoobBook: %s\n", response), failedQueries++, false;
 
-    Threads->rootMoves[0].move = ParseMove(&response[5], pos);
+    Threads[0].rootMoves[0].move = ParseMove(&response[5], pos);
 
     puts("info string NoobBook: Move received");
 

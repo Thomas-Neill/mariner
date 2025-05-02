@@ -33,7 +33,7 @@ Bitboard BetweenBB[64][64];
 static Bitboard BishopAttacks[5248];
 static Bitboard RookAttacks[102400];
 
-Magic Magics[64][2];
+std::array<std::array<Magic, 2>, 64> Magics;
 
 Bitboard PseudoAttacks[TYPE_NB][64];
 Bitboard PawnAttacks[COLOR_NB][64];
@@ -42,41 +42,52 @@ Bitboard PassedMask[COLOR_NB][64];
 Bitboard IsolatedMask[64];
 
 
-// Returns a bitboard with the landing square of the step,
-// or an empty bitboard if the step would go outside the board
-INLINE Bitboard LandingSquareBB(const Square sq, const int step) {
-    const Square to = sq + step;
-    const bool inside = to <= H8 && Distance(sq, to) <= 2;
-    return inside ? BB(to) : 0;
-}
-
 // Makes a slider attack bitboard
-static Bitboard MakeSliderAttackBB(const Square sq, const PieceType pt, const Bitboard occupied) {
-
+static Bitboard MakeSliderAttackBB(const Square sq, const PieceType pt, const Bitboard occupied) 
+{
     Bitboard attacks = 0;
+    int rStep = 1, fStep = pt == BISHOP ? 1 : 0;
 
-    const int BSteps[] = { 7, 9, -7, -9 };
-    const int RSteps[] = { 8, 1, -8, -1 };
-    const int *steps = pt == BISHOP ? BSteps : RSteps;
-
-    for (int dir = 0; dir < 4; ++dir) {
-        Square s = sq;
-        // Step in the direction until hitting a piece or the edge of the board
-        while(!(occupied & BB(s)) && LandingSquareBB(s, steps[dir]))
-            attacks |= BB(s += steps[dir]);
+    for (int dir = 0; dir < 4; ++dir)
+    {
+        int rank = sq / 8, file = sq % 8;
+        for ( ; ; )
+        {
+            rank += rStep, file += fStep;
+            if (rank < 0 || rank > 7 || file < 0 || file > 7)
+                break;
+            Square dst = Square(8 * rank + file);
+            if (occupied & BB(dst))
+                break;
+            attacks |= BB(dst);
+        }
+        // multiply by i
+        int temp = rStep;
+        rStep = fStep;
+        fStep = -temp;
     }
 
     return attacks;
 }
 
-// Initializes non-slider attack lookups
-static void InitNonSliderAttacks() {
+// Returns a bitboard with the landing square of the step (for K/N steps)
+// or an empty bitboard if the step would go outside the board
+INLINE Bitboard LandingSquareBB(const Square sq, int step)
+{
+    if (sq + step >= 64 || sq + step < 0)
+        return 0;
+    const Square to = Square(sq + step);
+    return Distance(sq, to) <= 2 ? BB(to) : 0;
+}
 
+// Initializes non-slider attack lookups
+static void InitNonSliderAttacks() 
+{
     int KSteps[8] = {  -9, -8, -7, -1,  1,  7,  8,  9 };
     int NSteps[8] = { -17,-15,-10, -6,  6, 10, 15, 17 };
 
-    for (Square sq = A1; sq <= H8; ++sq) {
-
+    for (Square sq = A1; sq <= H8; ++sq)
+    {
         // Kings and knights
         for (int i = 0; i < 8; ++i) {
             PseudoAttacks[KING][sq]   |= LandingSquareBB(sq, KSteps[i]);
@@ -92,10 +103,10 @@ static void InitNonSliderAttacks() {
 }
 
 // Initializes slider attack lookups
-static void InitSliderAttacks(PieceType pt, Bitboard table[]) {
-
-    for (Square sq = A1; sq <= H8; ++sq) {
-
+static void InitSliderAttacks(PieceType pt, Bitboard table[]) 
+{
+    for (Square sq = A1; sq <= H8; ++sq) 
+    {
         Magic *m = &Magics[sq][pt - BISHOP];
         (*m).attacks = table;
 
@@ -120,21 +131,22 @@ static void InitSliderAttacks(PieceType pt, Bitboard table[]) {
 }
 
 // Initializes all bitboard lookups
-CONSTR(2) InitBitboards() {
 
+CONSTR(InitBitboards, 2) 
+{
     InitNonSliderAttacks();
 
     InitSliderAttacks(BISHOP, BishopAttacks);
     InitSliderAttacks(ROOK, RookAttacks);
 
-    for (Square sq1 = A1; sq1 <= H8; sq1++)
-        for (Square sq2 = A1; sq2 <= H8; sq2++)
-            for (PieceType pt = BISHOP; pt <= ROOK; pt++)
+    for (Square sq1 = A1; sq1 <= H8; ++sq1)
+        for (Square sq2 = A1; sq2 <= H8; ++sq2)
+            for (PieceType pt = BISHOP; pt <= ROOK; pt = PieceType(pt + 1))
                 if (AttackBB(pt, sq1, BB(sq2)) & BB(sq2))
                     BetweenBB[sq1][sq2] = AttackBB(pt, sq1, BB(sq2)) & AttackBB(pt, sq2, BB(sq1));
 
-    for (Square sq = A1; sq <= H8; ++sq) {
-
+    for (Square sq = A1; sq <= H8; ++sq)
+    {
         IsolatedMask[sq] = AdjacentFilesBB(sq);
 
         PassedMask[WHITE][sq] = ShiftBB(~rank1BB, NORTH * RelativeRank(WHITE, RankOf(sq)))
@@ -160,8 +172,8 @@ Bitboard Attackers(const Position *pos, const Square sq, const Bitboard occ) {
 }
 
 // Checks whether a square is attacked by the given color
-bool SqAttacked(const Position *pos, const Square sq, const Color color) {
-
+bool SqAttacked(const Position *pos, const Square sq, const Color color) 
+{
     const Bitboard bishops = colorBB(color) & (pieceBB(BISHOP) | pieceBB(QUEEN));
     const Bitboard rooks   = colorBB(color) & (pieceBB(ROOK)   | pieceBB(QUEEN));
 

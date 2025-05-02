@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <intrin.h>
+#include <array>
 #include "types.h"
 #include "board.h"
 
@@ -82,7 +84,7 @@ typedef struct {
 #endif
 } Magic;
 
-enum {
+enum : uint64_t {
     fileABB = 0x0101010101010101,
     fileBBB = 0x0202020202020202,
     fileCBB = 0x0404040404040404,
@@ -112,7 +114,7 @@ extern const Bitboard RankBB[RANK_NB];
 
 extern Bitboard BetweenBB[64][64];
 
-extern Magic Magics[64][2];
+extern std::array<std::array<Magic, 2>, 64> Magics;
 
 extern Bitboard PseudoAttacks[TYPE_NB][64];
 extern Bitboard PawnAttacks[COLOR_NB][64];
@@ -123,17 +125,21 @@ extern Bitboard IsolatedMask[64];
 
 // Shifts a bitboard (protonspring version)
 // Doesn't work for shifting more than one step horizontally
-INLINE Bitboard ShiftBB(Bitboard bb, const Direction dir) {
-
+INLINE Bitboard ShiftBB(Bitboard bb, int offset) 
+{
     // Horizontal shifts should not wrap around
-    const int h = dir & 7;
-    bb = (h == 1) ? bb & ~fileHBB
-       : (h == 7) ? bb & ~fileABB
-                  : bb;
+    if (const int h = offset & 7)
+    {
+        assert(h == 1 || h == 7);
+        bb = (h == 1)
+                ? bb & ~fileHBB
+                : bb & ~fileABB;
+    }
 
     // Can only shift by positive numbers
-    return dir > 0 ? bb <<  dir
-                   : bb >> -dir;
+    return offset > 0 
+            ? bb << offset
+            : bb >> -offset;
 }
 
 // Fills a bitboard in either vertical direction
@@ -153,20 +159,23 @@ INLINE Bitboard AdjacentFilesBB(const Square sq) {
 
 // Population count/Hamming weight
 INLINE int PopCount(const Bitboard bb) {
-    return __builtin_popcountll(bb);
+    return static_cast<int>(_mm_popcnt_u64(bb));
+    // return __builtin_popcountll(bb);
 }
 
 // Returns the index of the least significant bit
 INLINE int Lsb(const Bitboard bb) {
     assert(bb);
-    return __builtin_ctzll(bb);
+    unsigned long y;
+    _BitScanForward64(&y, bb);
+    return static_cast<int>(y);
 }
 
 // Returns the index of the least significant bit and unsets it
-INLINE int PopLsb(Bitboard *bb) {
+INLINE Square PopLsb(Bitboard *bb) {
     int lsb = Lsb(*bb);
     *bb &= *bb - 1;
-    return lsb;
+    return Square(lsb);
 }
 
 // Checks whether or not a bitboard has multiple set bits
@@ -184,8 +193,8 @@ INLINE int PieceCount(const Position *pos, Piece piece) {
 }
 
 // Returns the attack bitboard for the piecetype on the given square
-INLINE Bitboard AttackBB(PieceType pt, Square sq, Bitboard occupied) {
-
+INLINE Bitboard AttackBB(PieceType pt, Square sq, Bitboard occupied) 
+{
     assert(pt != PAWN);
 
     switch (pt) {

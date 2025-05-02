@@ -80,17 +80,17 @@ Move NextMove(MovePicker *mp) {
 
     // Switch on stage, falls through to the next stage
     // if a move isn't returned in the current stage.
-    switch (mp->stage) {
-
+    switch (mp->stage) 
+    {
         case TTMOVE:
-            mp->stage++;
+            ++mp->stage;
             return mp->ttMove;
 
             // fall through
         case GEN_NOISY:
             GenNoisyMoves(pos, &mp->list);
             ScoreMoves(mp, GEN_NOISY);
-            mp->stage++;
+            ++mp->stage;
 
             // fall through
         case NOISY_GOOD:
@@ -102,11 +102,11 @@ Move NextMove(MovePicker *mp) {
                 else
                     mp->list.moves[mp->bads++].move = move;
 
-            mp->stage++;
+            ++mp->stage;
 
             // fall through
         case KILLER:
-            mp->stage++;
+            ++mp->stage;
             if (   mp->killer != mp->ttMove
                 && MoveIsPseudoLegal(pos, mp->killer))
                 return mp->killer;
@@ -117,7 +117,7 @@ Move NextMove(MovePicker *mp) {
                 GenQuietMoves(pos, &mp->list),
                 ScoreMoves(mp, GEN_QUIET);
 
-            mp->stage++;
+            ++mp->stage;
 
             // fall through
         case QUIET:
@@ -125,7 +125,7 @@ Move NextMove(MovePicker *mp) {
                 if ((move = PickNextMove(mp)))
                     return move;
 
-            mp->stage++;
+            ++mp->stage;
             mp->list.next = 0;
             mp->list.moves[mp->bads].move = NOMOVE;
 
