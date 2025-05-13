@@ -21,8 +21,6 @@
 #include "psqt.h"
 
 
-extern const int PieceTypeValue[TYPE_NB];
-
 
 int PSQT[PIECE_NB][64];
 

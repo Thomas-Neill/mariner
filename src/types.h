@@ -20,9 +20,8 @@
 
 #include <assert.h>
 #include <inttypes.h>
-#include <stdatomic.h>
-#include <stdbool.h>
 #include <stdio.h>
+#include <atomic>
 
 
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
@@ -32,7 +31,7 @@
 #define INLINE static inline __attribute__((always_inline))
 #define CONSTR(prio) static __attribute__((constructor (1000 + prio))) void
 
-#define loadRelaxed(x) atomic_load_explicit(&(x), memory_order_relaxed)
+#define loadRelaxed(x) atomic_load_explicit(&(x), std::memory_order_relaxed)
 
 #define lastMoveNullMove (!root && (ss-1)->move == NOMOVE)
 #define history(offset) (pos->gameHistory[pos->histPly + offset])
@@ -66,13 +65,14 @@ typedef int32_t Depth;
 typedef int32_t Color;
 typedef int32_t Piece;
 typedef int32_t PieceType;
+typedef int32_t Direction;
 
 
 enum {
     MAX_PLY = 100
 };
 
-enum Score {
+enum { // Score
     TBWIN        = 30000,
     TBWIN_IN_MAX = TBWIN - 999,
 
@@ -83,15 +83,15 @@ enum Score {
     NOSCORE  = MATE + 2,
 };
 
-enum Color {
+enum { // Color
     WHITE, BLACK, COLOR_NB
 };
 
-enum PieceType {
+enum { // PieceType
     ALL, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, TYPE_NB = 8
 };
 
-enum Piece {
+enum { // Piece
     EMPTY,
     wP = 1, wN, wB, wR, wQ, wK,
     bP = 9, bN, bB, bR, bQ, bK,
@@ -114,7 +114,7 @@ enum Rank {
     RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, RANK_NB
 };
 
-enum Square {
+enum { // Square
     A1, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
     A3, B3, C3, D3, E3, F3, G3, H3,
@@ -125,14 +125,14 @@ enum Square {
     A8, B8, C8, D8, E8, F8, G8, H8
 };
 
-typedef enum Direction {
+enum { // Direction
     NORTH = 8,
     EAST  = 1,
     SOUTH = -NORTH,
     WEST  = -EAST
-} Direction;
+};
 
-enum CastlingRights {
+enum { // CastlingRights
     WHITE_OO  = 1,
     WHITE_OOO = 2,
     BLACK_OO  = 4,

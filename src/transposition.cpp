@@ -80,7 +80,7 @@ int HashFull() {
 
 static void *ThreadClearTT(void *voidThread) {
 
-    Thread *thread = voidThread;
+    Thread *thread = (Thread*)voidThread;
     int index = thread->index;
     int count = thread->count;
 

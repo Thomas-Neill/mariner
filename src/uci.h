@@ -61,7 +61,7 @@ INLINE bool GetInput(char *str) {
 
 // Sets a limit to the corresponding value in line, if any
 INLINE void SetLimit(const char *str, const char *token, int *limit) {
-    char *ptr = NULL;
+    const char *ptr = NULL;
     if ((ptr = strstr(str, token)))
         *limit = atoi(ptr + strlen(token));
 }

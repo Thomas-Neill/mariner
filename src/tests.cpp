@@ -173,11 +173,11 @@ static uint64_t RecursivePerft(Position *pos, const Depth depth) {
 // Counts number of moves that can be made in a position to some depth
 void Perft(char *str) {
 
-    char *default_fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
+    const char *default_fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
 
     strtok(str, " ");
     char *d = strtok(NULL, " ");
-    char *fen = strtok(NULL, "\0") ?: default_fen;
+    const char *fen = strtok(NULL, "\0") ?: default_fen;
 
     Depth depth = d ? atoi(d) : 5;
     ParseFen(fen, &Threads->pos);

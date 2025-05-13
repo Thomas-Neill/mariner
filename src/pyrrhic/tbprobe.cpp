@@ -258,7 +258,7 @@ enum { WDL, DTM, DTZ };
 enum { PIECE_ENC, FILE_ENC, RANK_ENC };
 
 // Attack and move generation code
-#include "tbchess.c"
+#include "tbchess.cpp"
 
 struct PairsData {
   uint8_t *indexTable;
@@ -288,7 +288,7 @@ struct BaseEntry {
 #ifdef __cplusplus
   atomic<bool> ready[3];
 #else
-  atomic_bool ready[3];
+  std::atomic_bool ready[3];
 #endif
   uint8_t num;
   bool symmetric, hasPawns, hasDtm, hasDtz;
@@ -309,6 +309,8 @@ struct PieceEntry {
   uint8_t dtzFlags;
 };
 
+namespace pyrrhic { // avoid name collision
+
 struct PawnEntry {
   struct BaseEntry be;
   struct EncInfo ei[24]; // 4 * 2 + 6 * 2 + 4
@@ -319,6 +321,10 @@ struct PawnEntry {
   uint8_t dtzFlags[4];
   bool dtmSwitched;
 };
+
+};
+
+using namespace pyrrhic;
 
 struct TbHashEntry {
   uint64_t key;

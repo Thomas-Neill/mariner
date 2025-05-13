@@ -35,59 +35,13 @@
 #include "tuner.h"
 
 
-// Piece values
-extern const int PieceTypeValue[TYPE_NB];
-
-// PSQT values
-extern const int PieceSqValue[6][64];
-
-// Misc
-extern const int PawnDoubled;
-extern const int PawnDoubled2;
-extern const int PawnIsolated;
-extern const int PawnSupport;
-extern const int PawnThreat;
-extern const int PushThreat;
-extern const int PawnOpen;
-extern const int BishopPair;
-extern const int KingAtkPawn;
-extern const int OpenForward;
-extern const int SemiForward;
-extern const int NBBehindPawn;
-extern const int BishopBadP;
-extern const int Shelter;
-
-// Passed pawn
-extern const int PawnPassed[RANK_NB];
-extern const int PassedDefended[RANK_NB];
-extern const int PassedBlocked[4];
-extern const int PassedFreeAdv[4];
-extern const int PassedDistUs[4];
-extern const int PassedDistThem;
-extern const int PassedRookBack;
-extern const int PassedSquare;
-
-// Pawn phalanx
-extern const int PawnPhalanx[RANK_NB];
-
-
-extern const int ThreatByMinor[8];
-extern const int ThreatByRook[8];
-
-// KingLineDanger
-extern const int KingLineDanger[28];
-
-// Mobility
-extern const int Mobility[4][28];
-
-
 EvalTrace T, EmptyTrace;
 
 TTuple *TupleStack;
 int TupleStackSize;
 
 
-static void PrintSingle_(char *name, TIntVector params, int i, char *filler) {
+static void PrintSingle_(const char *name, TIntVector params, int i, const char *filler) {
     printf("const int %s%s = S(%3d,%3d);\n", name, filler, params[i][MG], params[i][EG]);
 }
 
@@ -98,7 +52,7 @@ static void PrintSingle_(char *name, TIntVector params, int i, char *filler) {
         printf("%s", a == (elements - 1) ? "" : ", ");      \
     }
 
-static void PrintArray_(char *name, TIntVector params, int i, int A, char *filler) {
+static void PrintArray_(const char *name, TIntVector params, int i, int A, const char *filler) {
 
     int perLine = A >= 8 ? 4 : 7;
 
@@ -385,7 +339,7 @@ static void InitTunerTuples(TEntry *entry, TCoeffs coeffs) {
     // Allocate additional memory if needed
     if (length > TupleStackSize) {
         TupleStackSize = STACKSIZE;
-        TupleStack = calloc(STACKSIZE, sizeof(TTuple));
+        TupleStack = (TTuple*)calloc(STACKSIZE, sizeof(TTuple));
         int ttupleMB = STACKSIZE * sizeof(TTuple) / (1 << 20);
         printf("Allocating [%dMB] x%d\r", ttupleMB, ++allocs);
     }
@@ -399,7 +353,7 @@ static void InitTunerTuples(TEntry *entry, TCoeffs coeffs) {
     // Finally setup each of our TTuples for this TEntry
     for (int i = 0; i < NTERMS; i++)
         if (coeffs[i] != 0.0)
-            entry->tuples[tidx++] = (TTuple) { i, coeffs[i] };
+            entry->tuples[tidx++] = (TTuple) { (int16_t)i, (int16_t)coeffs[i] };
 }
 
 static void InitTunerEntry(TEntry *entry, Position *pos, int *danger) {
@@ -541,8 +495,8 @@ void Tune() {
 
     TVector baseParams = {0}, params = {0}, momentum = {0}, velocity = {0};
     double K, error, rate = LRRATE;
-    TEntry *entries = calloc(NPOSITIONS, sizeof(TEntry));
-    TupleStack      = calloc(STACKSIZE,  sizeof(TTuple));
+    TEntry *entries = (TEntry*) calloc(NPOSITIONS, sizeof(TEntry));
+    TupleStack      = (TTuple*)calloc(STACKSIZE,  sizeof(TTuple));
 
     printf("Tuning %d terms using %d positions from %s\n", NTERMS, NPOSITIONS, DATASET);
     InitBaseParams(baseParams);

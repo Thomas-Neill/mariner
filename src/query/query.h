@@ -21,4 +21,4 @@
 #include "../board.h"
 
 
-char *Query(char *hostname, char *message);
+char *Query(const char *hostname, char *message);
