@@ -33,6 +33,7 @@ typedef struct {
     MoveListEntry moves[256];
 } MoveList;
 
+bool Consistent(const Position* pos, MoveList* list);
 
 void GenNoisyMoves(const Position *pos, MoveList *list);
 void GenQuietMoves(const Position *pos, MoveList *list);

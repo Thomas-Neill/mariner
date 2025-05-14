@@ -24,6 +24,14 @@
 #include "psqt.h"
 #include "transposition.h"
 
+bool Consistent(const Position* pos, int move)
+{
+    auto mover = pieceOn(fromSq(move));
+    assert(mover);
+    assert(ColorOf(mover) == pos->stm);
+    return true;
+}
+
 
 #define HASH_PCE(piece, sq) (pos->key ^= PieceKeys[(piece)][(sq)])
 #define HASH_CA             (pos->key ^= CastleKeys[pos->castlingRights])
@@ -32,8 +40,8 @@
 
 
 // Remove a piece from a square sq
-static void ClearPiece(Position *pos, const Square sq, const bool hash) {
-
+static void ClearPiece(Position *pos, const Square sq, const bool hash) 
+{
     const Piece piece = pieceOn(sq);
     const Color color = ColorOf(piece);
     const PieceType pt = PieceTypeOf(piece);
@@ -80,8 +88,8 @@ static void ClearPiece(Position *pos, const Square sq, const bool hash) {
 }
 
 // Add a piece piece to a square
-static void AddPiece(Position *pos, const Square sq, const Piece piece, const bool hash) {
-
+static void AddPiece(Position *pos, const Square sq, const Piece piece, const bool hash) 
+{
     const Color color = ColorOf(piece);
     const PieceType pt = PieceTypeOf(piece);
 
@@ -173,7 +181,7 @@ void TakeMove(Position *pos)
 {
     // Incremental updates
     pos->histPly--;
-    Reverse(sideToMove);
+    sideToMove = OtherColor(sideToMove);
 
     // Get the move from history
     const Move move = history(0).move;
@@ -182,7 +190,7 @@ void TakeMove(Position *pos)
 
     // Add in pawn captured by en passant
     if (moveIsEnPas(move))
-        AddPiece(pos, Square(to ^ 8), MakePiece(!sideToMove, PAWN), false);
+        AddPiece(pos, Square(to ^ 8), MakePiece(OtherColor(sideToMove), PAWN), false);
 
     // Move rook back if castling
     if (moveIsCastle(move)) {
@@ -282,8 +290,8 @@ void MakeMove(Position *pos, const Move move)
         MovePiece(pos, from, to, true);
 
         // Pawn move specifics
-        if (pieceTypeOn(to) == PAWN) {
-
+        if (pieceTypeOn(to) == PAWN) 
+        {
             pos->rule50 = 0;
             Piece promo = promotion(move);
 
@@ -311,7 +319,7 @@ void MakeMove(Position *pos, const Move move)
     }
 
     // Change turn to play
-    sideToMove = Reverse(sideToMove);
+    sideToMove = OtherColor(sideToMove);
     HASH_SIDE;
 
     pos->checkers = Checkers(pos);
@@ -321,8 +329,8 @@ void MakeMove(Position *pos, const Move move)
 }
 
 // Pass the turn without moving
-void MakeNullMove(Position *pos) {
-
+void MakeNullMove(Position *pos) 
+{
     // Save misc info for takeback
     history(0).key            = pos->key;
     history(0).move           = NOMOVE;
@@ -333,7 +341,7 @@ void MakeNullMove(Position *pos) {
     // Incremental updates
     pos->histPly++;
     pos->rule50 = 0;
-    sideToMove = Reverse(sideToMove);
+    sideToMove = OtherColor(sideToMove);
     HASH_SIDE;
 
     // Hash out en passant if there was one, and unset it
@@ -350,7 +358,7 @@ void TakeNullMove(Position *pos) {
 
     // Incremental updates
     pos->histPly--;
-    sideToMove = Reverse(sideToMove);
+    sideToMove = OtherColor(sideToMove);
 
     // Get info from history
     pos->key      = history(0).key;

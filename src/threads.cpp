@@ -28,15 +28,12 @@
 
 
 std::vector<Thread> Threads;
-static std::vector<std::thread> TheTasks;
 
 
 // Allocates memory for thread structs
 void InitThreads(int count) 
 {
     Threads.clear();
-    TheTasks.clear();
-
     Threads.resize(count);
 
     // Each thread knows its own index and total thread count
@@ -79,8 +76,8 @@ uint64_t TotalTBHits() {
 }
 
 // Setup threads for a new search
-void PrepareSearch(Position *pos, Move searchmoves[]) {
-
+void PrepareSearch(Position *pos, Move searchmoves[]) 
+{
     MoveList legalMoves;
     legalMoves.count = legalMoves.next = 0;
     GenLegalMoves(pos, &legalMoves);
@@ -115,19 +112,22 @@ void PrepareSearch(Position *pos, Move searchmoves[]) {
 static bool helpersActive = false;
 
 // Start helper threads running the provided function
-void StartHelpers(void (*func)(Thread*)) {
+void StartHelpers(void (*func)(Thread*), std::vector<std::thread>* tasks) 
+{
     helpersActive = true;
+    tasks->clear();
     for (auto& t : Threads)
-        TheTasks.push_back(std::thread(func, &t));
+        tasks->push_back(std::thread(func, &t));
 }
 
 // Wait for helper threads to finish
-void WaitForHelpers() {
+void WaitForHelpers(std::vector<std::thread>* tasks) 
+{
     if (helpersActive)
     {
-        for (auto& t : TheTasks)
+        for (auto& t : *tasks)
             t.join();
-        TheTasks.clear();
+        tasks->clear();
         helpersActive = false;
     }
 }

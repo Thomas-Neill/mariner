@@ -122,8 +122,8 @@ char *MoveToStr(const Move move) {
 }
 
 // Translates a string to a move
-Move ParseMove(const char *str, const Position *pos) {
-
+Move ParseMove(const char *str, const Position *pos) 
+{
     Square from = StrToSq(str);
     Square to   = StrToSq(str+2);
 

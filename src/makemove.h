@@ -21,8 +21,23 @@
 #include "board.h"
 #include "types.h"
 
+bool Consistent(const Position* pos, int move);
 
 void MakeMove(Position *pos, Move move);
 void TakeMove(Position *pos);
 void MakeNullMove(Position *pos);
 void TakeNullMove(Position *pos);
+
+struct WithMove_
+{
+    Position* pos_;
+    WithMove_(Position* pos, Move move) : pos_(pos) { MakeMove(pos, move); }
+    ~WithMove_() { TakeMove(pos_); }
+};
+
+struct WithNullMove_
+{
+    Position* pos_;
+    WithNullMove_(Position* pos) : pos_(pos) { MakeNullMove(pos); }
+    ~WithNullMove_() { TakeNullMove(pos_); }
+};

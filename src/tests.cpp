@@ -162,9 +162,8 @@ static uint64_t RecursivePerft(Position *pos, const Depth depth) {
 
     for (int i = 0; i < list.count; i++) {
         if (!MoveIsLegal(pos, list.moves[i].move)) continue;
-        MakeMove(pos, list.moves[i].move);
+        WithMove_ _(pos, list.moves[i].move);
         leafnodes += RecursivePerft(pos, depth - 1);
-        TakeMove(pos);
     }
 
     return leafnodes;

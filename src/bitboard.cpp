@@ -107,7 +107,7 @@ static void InitSliderAttacks(PieceType pt, Bitboard table[])
 {
     for (Square sq = A1; sq <= H8; ++sq) 
     {
-        Magic *m = &Magics[sq][pt - BISHOP];
+        Magic *m = &Magics[sq][pt == BISHOP ? 0 : 1];
         (*m).attacks = table;
 
         Bitboard edges = ((rank1BB | rank8BB) & ~RankBB[RankOf(sq)])
@@ -177,7 +177,7 @@ bool SqAttacked(const Position *pos, const Square sq, const Color color)
     const Bitboard bishops = colorBB(color) & (pieceBB(BISHOP) | pieceBB(QUEEN));
     const Bitboard rooks   = colorBB(color) & (pieceBB(ROOK)   | pieceBB(QUEEN));
 
-    return (   PawnAttackBB(!color, sq) & colorPieceBB(color, PAWN)
+    return (   PawnAttackBB(OtherColor(color), sq) & colorPieceBB(color, PAWN)
             || AttackBB(KNIGHT, sq, 0)  & colorPieceBB(color, KNIGHT)
             || AttackBB(KING,   sq, 0)  & colorPieceBB(color, KING)
             || AttackBB(BISHOP, sq, pieceBB(ALL)) & bishops
@@ -186,5 +186,5 @@ bool SqAttacked(const Position *pos, const Square sq, const Color color)
 
 // Checks whether a king is attacked
 bool KingAttacked(const Position *pos, const Color color) {
-    return SqAttacked(pos, kingSq(color), !color);
+    return SqAttacked(pos, kingSq(color), OtherColor(color));
 }

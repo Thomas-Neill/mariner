@@ -22,7 +22,7 @@
 #include "types.h"
 
 
-#define ENDGAME_TABLE_SIZE 64
+constexpr int ENDGAME_TABLE_SIZE = 64;
 
 
 typedef int (*SpecializedEval) (const Position *pos, Color color);

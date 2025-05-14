@@ -21,11 +21,19 @@
 #include "move.h"
 #include "movegen.h"
 
+bool Consistent(const Position* pos, MoveList* list)
+{
+    for (int ii = 0; ii < list->count; ++ii)
+        assert(Consistent(pos, list->moves[ii].move));
+    return true;
+}
+
 
 enum { QUIET, NOISY };
 
 // Constructs and adds a move to the move list
-INLINE void AddMove(const Position *pos, MoveList *list, const Square from, const Square to, const Piece promo, const int flag) {
+INLINE void AddMove(const Position *pos, MoveList *list, const Square from, const Square to, const Piece promo, const int flag) 
+{
     list->moves[list->count++].move = MOVE(from, to, pieceOn(from), pieceOn(to), promo, flag);
 }
 
@@ -55,8 +63,8 @@ INLINE void AddPawnMoves(const Position *pos, MoveList *list, Bitboard moves, co
 }
 
 // Castling is now a bit less of a mess
-INLINE void GenCastling(const Position *pos, MoveList *list, const Color color, const int type) {
-
+INLINE void GenCastling(const Position *pos, MoveList *list, const Color color, const int type) 
+{
     if (type != QUIET) return;
 
     const Square from = kingSq(color);
@@ -73,8 +81,8 @@ INLINE void GenCastling(const Position *pos, MoveList *list, const Color color, 
 }
 
 // Pawns are a mess
-INLINE void GenPawn(const Position *pos, MoveList *list, const Color color, const int type) {
-
+INLINE void GenPawn(const Position *pos, MoveList *list, const Color color, const int type) 
+{
     const Direction up    = color == WHITE ? NORTH : SOUTH;
     const Direction left  = color == WHITE ? WEST  : EAST;
     const Direction right = color == WHITE ? EAST  : WEST;
@@ -90,8 +98,8 @@ INLINE void GenPawn(const Position *pos, MoveList *list, const Color color, cons
     const Bitboard rCap = enemies & ShiftBB(pawns, up+right);
 
     // Normal moves forward
-    if (type == QUIET) {
-
+    if (type == QUIET) 
+    {
         Bitboard moves = push & normal;
         Bitboard doubles = ShiftBB(moves, up) & empty & RankBB[RelativeRank(color, RANK_4)];
 
@@ -120,7 +128,7 @@ INLINE void GenPawn(const Position *pos, MoveList *list, const Color color, cons
         if (pos->epSquare) {
             if (pos->checkers && !(pos->checkers & BB(pos->epSquare ^ 8)))
                 return;
-            Bitboard enPassers = pawns & PawnAttackBB(!color, pos->epSquare);
+            Bitboard enPassers = pawns & PawnAttackBB(OtherColor(color), pos->epSquare);
             while (enPassers)
                 AddMove(pos, list, PopLsb(&enPassers), pos->epSquare, EMPTY, FLAG_ENPAS);
         }
@@ -128,8 +136,8 @@ INLINE void GenPawn(const Position *pos, MoveList *list, const Color color, cons
 }
 
 // Knight, bishop, rook, queen and king except castling
-INLINE void GenPieceType(const Position *pos, MoveList *list, const Color color, const int type, const PieceType pt) {
-
+INLINE void GenPieceType(const Position *pos, MoveList *list, const Color color, const int type, const PieceType pt) 
+{
     const bool mustDefendCheck = pos->checkers && pt != KING;
     const Bitboard occupied = pieceBB(ALL);
     const Bitboard enemies  = mustDefendCheck ? pos->checkers : colorBB(!color);
@@ -146,19 +154,35 @@ INLINE void GenPieceType(const Position *pos, MoveList *list, const Color color,
     }
 }
 
-// Generate all quiet or noisy moves for the given color
-static void GenMoves(const Position *pos, MoveList *list, const Color color, const int type) {
+bool BottomHalf(MoveList* list)
+{
+    for (int n = 0; n < list->count; ++n)
+    {
+        assert(fromSq(list->moves[n].move) < 32);
+    }
+    return true;
+}
 
+// Generate all quiet or noisy moves for the given color
+static void GenMoves(const Position *pos, MoveList *list, const Color color, const int type) 
+{
     if (Multiple(pos->checkers))
         return GenPieceType(pos, list, color, type, KING);
 
-    GenCastling (pos, list, color, type);
-    GenPawn     (pos, list, color, type);
-    GenPieceType(pos, list, color, type, KNIGHT);
-    GenPieceType(pos, list, color, type, ROOK);
-    GenPieceType(pos, list, color, type, BISHOP);
-    GenPieceType(pos, list, color, type, QUEEN);
-    GenPieceType(pos, list, color, type, KING);
+    GenCastling(pos, list, color, type);  assert(pos->histPly || BottomHalf(list));
+    assert(Consistent(pos, list));
+    GenPawn     (pos, list, color, type); assert(pos->histPly || BottomHalf(list));
+    assert(Consistent(pos, list));
+    GenPieceType(pos, list, color, type, KNIGHT); assert(pos->histPly || BottomHalf(list));
+    assert(Consistent(pos, list));
+    GenPieceType(pos, list, color, type, ROOK); assert(pos->histPly || BottomHalf(list));
+    assert(Consistent(pos, list));
+    GenPieceType(pos, list, color, type, BISHOP); assert(pos->histPly || BottomHalf(list));
+    assert(Consistent(pos, list));
+    GenPieceType(pos, list, color, type, QUEEN); assert(pos->histPly || BottomHalf(list));
+    assert(Consistent(pos, list));
+    GenPieceType(pos, list, color, type, KING); assert(pos->histPly || BottomHalf(list));
+    assert(Consistent(pos, list));
 }
 
 void GenQuietMoves(const Position *pos, MoveList *list) {

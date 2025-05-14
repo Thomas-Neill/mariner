@@ -32,45 +32,42 @@
 0000 0100 0000 0000 0000 0000 0000 0000 -> Castle     << 26
 */
 
-#define NOMOVE 0
+constexpr Move NOMOVE = 0;
 
 // Fields
-#define MOVE_FROM       0x000003F
-#define MOVE_TO         0x0000FC0
-#define MOVE_PIECE      0x000F000
-#define MOVE_CAPT       0x00F0000
-#define MOVE_PROMO      0x0F00000
-#define MOVE_FLAGS      0x7000000
+constexpr uint32_t MOVE_FROM = 0x000003F,
+                    MOVE_TO = 0x0000FC0,
+                    MOVE_PIECE = 0x000F000,
+                    MOVE_CAPT = 0x00F0000,
+                    MOVE_PROMO = 0x0F00000,
+                    MOVE_FLAGS = 0x7000000;
 
 // Special move flags
-#define FLAG_NONE       0
-#define FLAG_ENPAS      0x1000000
-#define FLAG_PAWNSTART  0x2000000
-#define FLAG_CASTLE     0x4000000
+constexpr uint32_t FLAG_NONE = 0, FLAG_ENPAS = 0x1000000, FLAG_PAWNSTART = 0x2000000, FLAG_CASTLE = 0x4000000;
 
 // Move constructor
-#define MOVE(f, t, pc, ca, pro, fl) ((f) | ((t) << 6) | ((pc) << 12) | ((ca) << 16) | ((pro) << 20) | (fl))
+INLINE Move MOVE(Square f, Square t, Piece pc, Piece ca, Piece pro, uint32_t fl) { return ((f) | ((t) << 6) | ((pc) << 12) | ((ca) << 16) | ((pro) << 20) | (fl)); }
 
 // Extract info from a move
-#define fromSq(move)     Square((move) & MOVE_FROM)
-#define toSq(move)      Square(((move) & MOVE_TO)    >>  6)
-#define piece(move)     Piece(((move) & MOVE_PIECE) >> 12)
-#define capturing(move) Piece(((move) & MOVE_CAPT)  >> 16)
-#define promotion(move) Piece(((move) & MOVE_PROMO) >> 20)
+INLINE Square fromSq(Move move) { return Square((move)&MOVE_FROM); }
+INLINE Square toSq(Move move) { return Square(((move)&MOVE_TO) >> 6); }
+INLINE Piece piece(Move move) { return Piece(((move)&MOVE_PIECE) >> 12); }
+INLINE Piece capturing(Move move) { return Piece(((move)&MOVE_CAPT) >> 16); }
+INLINE Piece promotion(Move move) { return Piece(((move)&MOVE_PROMO) >> 20); }
 
 // Move types
-#define moveIsEnPas(move)   ((bool)(move & FLAG_ENPAS))
-#define moveIsPStart(move)  ((bool)(move & FLAG_PAWNSTART))
-#define moveIsCastle(move)  ((bool)(move & FLAG_CASTLE))
-#define moveIsSpecial(move) ((bool)(move & (MOVE_FLAGS | MOVE_PROMO)))
-#define moveIsCapture(move) ((bool)(move & MOVE_CAPT))
-#define moveIsNoisy(move)   ((bool)(move & (MOVE_CAPT | MOVE_PROMO | FLAG_ENPAS)))
-#define moveIsQuiet(move)   ((bool)(!moveIsNoisy(move)))
+INLINE bool moveIsEnPas(Move move) { return move & FLAG_ENPAS; }
+INLINE bool moveIsPStart(Move move) { return move & FLAG_PAWNSTART; }
+INLINE bool moveIsCastle(Move move) { return move & FLAG_CASTLE; }
+INLINE bool moveIsSpecial(Move move) { return move & (MOVE_FLAGS | MOVE_PROMO); }
+INLINE bool moveIsCapture(Move move) { return move & MOVE_CAPT; }
+INLINE bool moveIsNoisy(Move move) { return move & (MOVE_CAPT | MOVE_PROMO | FLAG_ENPAS); }
+INLINE bool moveIsQuiet(Move move) { return !moveIsNoisy(move); }
 
 
 // Checks legality of a specific castle move given the current position
-INLINE bool CastleLegal(const Position *pos, Square to) {
-
+INLINE bool CastleLegal(const Position *pos, Square to) 
+{
     assert(to == C1 || to == G1 || to == C8 || to == G8);
 
     Color color = RankOf(to) == RANK_1 ? WHITE : BLACK;
@@ -85,7 +82,7 @@ INLINE bool CastleLegal(const Position *pos, Square to) {
     Bitboard kingPath = BetweenBB[kingSq(color)][to] | BB(to);
 
     while (kingPath)
-        if (SqAttacked(pos, PopLsb(&kingPath), !color))
+        if (SqAttacked(pos, PopLsb(&kingPath), OtherColor(color)))
             return false;
 
     return !Chess960 || !(Attackers(pos, to, pieceBB(ALL) ^ BB(RookSquare[castle])) & colorBB(!color));

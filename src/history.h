@@ -25,8 +25,10 @@
 #include "threads.h"
 #include "types.h"
 
+INLINE int16_t& HistQuiet(Thread* t, int move) { return t->history[t->pos.stm][fromSq(move)][toSq(move)]; }
+INLINE const int16_t& HistQuiet(const Thread* t, int move) { return t->history[t->pos.stm][fromSq(move)][toSq(move)]; }
 
-#define QuietEntry(move)        (&thread->history[thread->pos.stm][fromSq(move)][toSq(move)])
+#define QuietEntry(move)        (&HistQuiet(thread, move))
 #define PawnEntry(move)         (&thread->pawnHistory[PawnStructure(&thread->pos)][piece(move)][toSq(move)])
 #define NoisyEntry(move)        (&thread->captureHistory[piece(move)][toSq(move)][PieceTypeOf(capturing(move))])
 #define ContEntry(offset, move) (&(*(ss-offset)->continuation)[piece(move)][toSq(move)])

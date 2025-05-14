@@ -22,7 +22,7 @@
 #include "types.h"
 
 
-#define PAWN_CACHE_SIZE 128 * 1024
+constexpr int PAWN_CACHE_SIZE = 128 * 1024;
 
 typedef struct PawnEntry {
     Key key;
@@ -43,9 +43,9 @@ enum Phase { MG, EG };
 static const int MidGame = 256;
 extern const int PhaseValue[TYPE_NB];
 
-#define S(mg, eg) ((int)((unsigned int)(eg) << 16) + (mg))
-#define MgScore(s) ((int16_t)((uint16_t)((unsigned)((s)))))
-#define EgScore(s) ((int16_t)((uint16_t)((unsigned)((s) + 0x8000) >> 16)))
+INLINE int S(int16_t mg, int16_t eg) { return ((int)((unsigned int)(eg) << 16) + (mg)); }
+INLINE int16_t MgScore(int s) { return ((int16_t)((uint16_t)((unsigned)((s))))); }
+INLINE int16_t EgScore(int s) { return ((int16_t)((uint16_t)((unsigned)((s)+0x8000) >> 16))); }
 
 // Calculates the phase from the phase values of the pieces left
 INLINE int UpdatePhase(int value) {
