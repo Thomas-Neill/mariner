@@ -27,11 +27,11 @@
 #ifdef USE_PEXT
 // Uses the bmi2 pext instruction in place of magic bitboards
 #include "x86intrin.h"
-#define AttackIndex(sq, pt, occ) (_pext_u64(occ, Magics[sq][pt - BISHOP].mask))
+#define AttackIndex(sq, pt, occ) (_pext_u64(occ, Magics[sq][pt == BISHOP ? 0 : 1].mask))
 
 #else
 // Uses magic bitboards as explained on https://www.chessprogramming.org/Magic_Bitboards
-#define AttackIndex(sq, pt, occ) (((occ & Magics[sq][pt - BISHOP].mask) * Magics[sq][pt - BISHOP].magic) >> Magics[sq][pt - BISHOP].shift)
+#define AttackIndex(sq, pt, occ) (((occ & Magics[sq][pt == BISHOP ? 0 : 1].mask) * Magics[sq][pt == BISHOP ? 0 : 1].magic) >> Magics[sq][pt == BISHOP ? 0 : 1].shift)
 #define MagicNumber(pt, sq) (pt == BISHOP ? BishopMagics[sq] : RookMagics[sq])
 
 static const uint64_t RookMagics[64] = {
@@ -73,7 +73,7 @@ static const uint64_t BishopMagics[64] = {
 };
 #endif
 
-#define MagicAttack(sq, pt, occ) (Magics[sq][pt - BISHOP].attacks[AttackIndex(sq, pt, occ)])
+#define MagicAttack(sq, pt, occ) (Magics[sq][pt == BISHOP ? 0 : 1].attacks[AttackIndex(sq, pt, occ)])
 
 typedef struct {
     Bitboard mask;
@@ -164,18 +164,18 @@ INLINE int PopCount(const Bitboard bb) {
 }
 
 // Returns the index of the least significant bit
-INLINE int Lsb(const Bitboard bb) {
+INLINE Square Lsb(const Bitboard bb) {
     assert(bb);
     unsigned long y;
     _BitScanForward64(&y, bb);
-    return static_cast<int>(y);
+    return Square(static_cast<int>(y));
 }
 
 // Returns the index of the least significant bit and unsets it
 INLINE Square PopLsb(Bitboard *bb) {
-    int lsb = Lsb(*bb);
+    Square lsb = Lsb(*bb);
     *bb &= *bb - 1;
-    return Square(lsb);
+    return lsb;
 }
 
 // Checks whether or not a bitboard has multiple set bits

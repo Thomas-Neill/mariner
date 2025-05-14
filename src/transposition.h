@@ -27,14 +27,10 @@
 #include "types.h"
 
 
-#define HASH_MIN 2
-#define HASH_MAX ((int)(pow(2, 40) * sizeof(TTBucket) / (1024 * 1024))) // 40 could be set as high as 64
-#define HASH_DEFAULT 32
+constexpr int HASH_MIN = 2;
+constexpr int HASH_DEFAULT = 32;
 
 #define BUCKET_SIZE 2
-
-#define ValidBound(bound) (bound >= BOUND_UPPER && bound <= BOUND_EXACT)
-#define ValidScore(score) (score >= -MATE && score <= MATE)
 
 
 enum { BOUND_NONE, BOUND_UPPER, BOUND_LOWER, BOUND_EXACT };
@@ -84,14 +80,14 @@ INLINE int  EntryValue(TTEntry *entry) { return entry->depth - Age(entry); }
 INLINE bool EntryEmpty(TTEntry *entry) { return Bound(entry) == BOUND_NONE; }
 
 // Store terminal scores as distance from the current position to mate/TB
-INLINE int ScoreToTT (const int score, const uint8_t ply) {
+INLINE int ScoreToTT (int score, uint8_t ply) {
     return  isWin(score)  ? score + ply
           : isLoss(score) ? score - ply
                           : score;
 }
 
 // Add the distance from root to terminal scores get the total distance to mate/TB
-INLINE int ScoreFromTT (const int score, const uint8_t ply) {
+INLINE int ScoreFromTT (int score, uint8_t ply) {
     return  isWin(score)  ? score - ply
           : isLoss(score) ? score + ply
                           : score;

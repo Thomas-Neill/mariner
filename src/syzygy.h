@@ -67,8 +67,8 @@ static bool ProbeWDL(const Position *pos, int *score, int *bound, int ply) {
 }
 
 // Probe local Syzygy files using Pyrrhic to get an optimal move
-static bool ProbeRoot(const Position *pos, Move *move, unsigned *wdl, unsigned *dtz) {
-
+static bool ProbeRoot(const Position *pos, Move *move, unsigned *wdl, unsigned *dtz) 
+{
     // Call Pyrrhic
     unsigned result = tb_probe_root(
         colorBB(WHITE),  colorBB(BLACK),
@@ -88,7 +88,7 @@ static bool ProbeRoot(const Position *pos, Move *move, unsigned *wdl, unsigned *
     unsigned to    = TB_GET_TO(result);
     unsigned promo = TB_GET_PROMOTES(result);
 
-    *move = MOVE(from, to, 0, 0, promo ? 6 - promo : 0, 0);
+    *move = MOVE(Square(from), Square(to), Piece::EMPTY, Piece::EMPTY, promo ? Piece(6 - promo) : Piece::EMPTY, 0);
     *wdl = TB_GET_WDL(result);
     *dtz = TB_GET_DTZ(result) - 1;
 

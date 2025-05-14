@@ -87,8 +87,8 @@ static void Pos(Position *pos, char *str)
 
     // Loop over the moves and make them in succession
     char *move = strtok(str, " ");
-    while ((move = strtok(NULL, " "))) {
-
+    while ((move = strtok(NULL, " "))) 
+    {
         // Parse and make move
         MakeMove(pos, ParseMove(move, pos));
 
@@ -104,8 +104,8 @@ static void Pos(Position *pos, char *str)
 }
 
 // Parses a 'setoption' and updates settings
-static void SetOption(char *str) {
-
+static void SetOption(char *str) 
+{
     char *optionName  = strstr(str, "name") + 5;
     char *optionValue = strstr(str, "value") + 6;
 
@@ -129,7 +129,9 @@ static void SetOption(char *str) {
 }
 
 // Prints UCI info
-static void Info() {
+static void Info() 
+{
+    constexpr int HASH_MAX = sizeof(TTBucket) << (40 - 20); // 40 could be set as high as 64
 
     printf("id name %s%s\n",
            NAME,
@@ -239,7 +241,7 @@ void PrintThinking(const Thread *thread, int alpha, int beta)
     uint64_t nodes    = TotalNodes();
     uint64_t tbhits   = TotalTBHits();
     int hashFull      = HashFull();
-    int nps           = (int)(1000 * nodes / (elapsed + 1));
+    int nps           = (int)((1000ull * nodes) / (elapsed + 1));
 
     Depth seldepth = 128;
     for (; seldepth > 0; --seldepth)

@@ -21,10 +21,9 @@
 #include "move.h"
 #include "movepicker.h"
 
-
 // Return the next best move
-static Move PickNextMove(MovePicker *mp) {
-
+static Move PickNextMove(MovePicker *mp) 
+{
     MoveList *list = &mp->list;
 
     if (list->next == list->count)
@@ -40,8 +39,8 @@ static Move PickNextMove(MovePicker *mp) {
 }
 
 // Partial insertion sort
-static void SortMoves(MoveList *list, int threshold) {
-
+static void SortMoves(MoveList *list, int threshold) 
+{
     MoveListEntry *begin = &list->moves[list->next];
     MoveListEntry *end = &list->moves[list->count];
 
@@ -57,8 +56,8 @@ static void SortMoves(MoveList *list, int threshold) {
 }
 
 // Gives a score to each move left in the list
-static void ScoreMoves(MovePicker *mp, const int stage) {
-
+static void ScoreMoves(MovePicker *mp, const int stage) 
+{
     const Thread *thread = mp->thread;
     MoveList *list = &mp->list;
 
@@ -73,10 +72,11 @@ static void ScoreMoves(MovePicker *mp, const int stage) {
 }
 
 // Returns the next move to try in a position
-Move NextMove(MovePicker *mp) {
-
+Move NextMove(MovePicker *mp) 
+{
     Move move;
     Position *pos = &mp->thread->pos;
+    assert(Consistent(pos, &mp->list));
 
     // Switch on stage, falls through to the next stage
     // if a move isn't returned in the current stage.
@@ -86,13 +86,13 @@ Move NextMove(MovePicker *mp) {
             ++mp->stage;
             return mp->ttMove;
 
-            // fall through
+            __fallthrough;
         case GEN_NOISY:
             GenNoisyMoves(pos, &mp->list);
             ScoreMoves(mp, GEN_NOISY);
             ++mp->stage;
 
-            // fall through
+            __fallthrough;
         case NOISY_GOOD:
             // Save seemingly bad noisy moves for later
             while ((move = PickNextMove(mp)))
@@ -104,23 +104,29 @@ Move NextMove(MovePicker *mp) {
 
             ++mp->stage;
 
-            // fall through
+            __fallthrough;
         case KILLER:
             ++mp->stage;
             if (   mp->killer != mp->ttMove
                 && MoveIsPseudoLegal(pos, mp->killer))
                 return mp->killer;
 
-            // fall through
+            __fallthrough;
         case GEN_QUIET:
             if (!mp->onlyNoisy)
-                GenQuietMoves(pos, &mp->list),
+            {
+                GenQuietMoves(pos, &mp->list);
+                assert(Consistent(pos, &mp->list));
                 ScoreMoves(mp, GEN_QUIET);
+            }
+            assert(Consistent(pos, &mp->list));
 
             ++mp->stage;
+            assert(Consistent(pos, &mp->list));
 
-            // fall through
+            __fallthrough;
         case QUIET:
+            assert(Consistent(pos, &mp->list));
             if (!mp->onlyNoisy)
                 if ((move = PickNextMove(mp)))
                     return move;
@@ -129,7 +135,7 @@ Move NextMove(MovePicker *mp) {
             mp->list.next = 0;
             mp->list.moves[mp->bads].move = NOMOVE;
 
-            // fall through
+            __fallthrough;
         case NOISY_BAD:
             return mp->list.moves[mp->list.next++].move;
 

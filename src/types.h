@@ -24,12 +24,11 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-
-#define MIN(A, B) ((A) < (B) ? (A) : (B))
-#define MAX(A, B) ((A) > (B) ? (A) : (B))
-#define CLAMP(x, low, high)  (MIN((high), MAX((x), (low))))
-
 #define INLINE __forceinline
+
+template<class T_, class U_> INLINE T_ MIN(T_ A, U_ B) { return A < B ? A : B; }
+template<class T_, class U_> INLINE T_ MAX(T_ A, U_ B) { return A > B ? A : B; }
+template<class T_> INLINE T_ CLAMP(T_ x, T_ low, T_ high) { return MIN(high, MAX(x, low)); }
 
 #ifdef _MSC_VER
 #define CONSTR(func, prio)                      \
@@ -46,7 +45,6 @@
 #define lastMoveNullMove (!root && (ss-1)->move == NOMOVE)
 #define history(offset) (pos->gameHistory[pos->histPly + offset])
 
-#define BB(sq) (1ull << (sq))
 #define pieceBB(type) (pos->pieceBB[(type)])
 #define colorBB(color) (pos->colorBB[(color)])
 #define colorPieceBB(color, type) (colorBB(color) & pieceBB(type))
@@ -56,13 +54,24 @@
 #define pieceTypeOn(sq) (PieceTypeOf(pieceOn(sq)))
 #define kingSq(color) Square(Lsb(colorPieceBB(color, KING)))
 
-#define isLoss(score) (score <= -TBWIN_IN_MAX)
-#define isWin(score)  (score >=  TBWIN_IN_MAX)
-#define isMate(score) (abs(score) >= MATE_IN_MAX)
-#define isTerminal(score) (isWin(score) || isLoss(score))
+enum Score {
+    TBWIN = 30000,
+    TBWIN_IN_MAX = TBWIN - 999,
 
-#define matedIn(ply) (-MATE + (ply))
-#define mateIn(ply)  (MATE - (ply))
+    MATE = 31000,
+    MATE_IN_MAX = MATE - 999,
+
+    INFINITE = MATE + 1,
+    NOSCORE = MATE + 2,
+};
+
+INLINE bool isLoss(int score) { return score <= -TBWIN_IN_MAX; }
+INLINE bool isWin(int score) { return score >= TBWIN_IN_MAX; }
+INLINE bool isMate(int score) { return abs(score) >= MATE_IN_MAX; }
+INLINE bool isTerminal(int score) { return isWin(score) || isLoss(score); }
+
+INLINE int matedIn(int ply) { return -MATE + ply; }
+INLINE int mateIn(int ply) { return MATE - ply; }
 
 typedef uint64_t Bitboard;
 typedef uint64_t Key;
@@ -71,28 +80,13 @@ typedef uint32_t Move;
 
 typedef int32_t Depth;
 
+constexpr int MAX_PLY = 100;
 
-enum {
-    MAX_PLY = 100
-};
-
-enum Score {
-    TBWIN        = 30000,
-    TBWIN_IN_MAX = TBWIN - 999,
-
-    MATE        = 31000,
-    MATE_IN_MAX = MATE - 999,
-
-    INFINITE = MATE + 1,
-    NOSCORE  = MATE + 2,
-};
 
 enum Color {
     WHITE, BLACK, COLOR_NB
 };
-INLINE Color operator!(Color c) { return Color(1 ^ c); }
-INLINE Color operator++(Color& c) { return c = Color(c + 1); }
-INLINE Color& Reverse(Color& c) { return c = Color(1 ^ c); }
+INLINE Color OtherColor(Color c) { return Color(1 ^ c); }
 
 enum PieceType {
     ALL, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, TYPE_NB = 8
@@ -136,6 +130,8 @@ enum Square {
 constexpr inline Square operator++(Square& s) { return s = Square(s + 1); }
 inline Square operator--(Square& s) { return s = Square(s - 1); }
 inline Square operator^(Square s, int ii) { return Square(int(s) ^ ii); }
+
+INLINE uint64_t BB(Square sq) { return 1ull << sq; }
 
 typedef enum Direction {
     NORTH = 8,

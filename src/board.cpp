@@ -127,7 +127,7 @@ static Key GenMaterialKey(const Position *pos) {
 
     Key key = 0;
 
-    for (Color c = WHITE; c <= BLACK; ++c)
+    for (auto c : std::array<Color, 2>{WHITE, BLACK})
         for (PieceType pt = PAWN; pt <= KING; ++pt)
             for (int count = 0; count < PopCount(colorPieceBB(c, pt)); ++count)
                 key ^= PieceKeys[MakePiece(c, pt)][count];
@@ -270,7 +270,7 @@ void ParseFen(const char *fen, Position *pos)
     token = strtok(NULL, " ");
     if (*token != '-') {
         Square ep = StrToSq(token);
-        bool usable = PawnAttackBB(!sideToMove, ep) & colorPieceBB(sideToMove, PAWN);
+        bool usable = PawnAttackBB(OtherColor(sideToMove), ep) & colorPieceBB(sideToMove, PAWN);
         pos->epSquare = usable ? ep : Square(0);
     }
 
@@ -354,8 +354,8 @@ static int SEEValues[TYPE_NB] = {
 };
 
 // Static Exchange Evaluation
-bool SEE(const Position *pos, const Move move, const int threshold) {
-
+bool SEE(const Position *pos, const Move move, const int threshold) 
+{
     assert(MoveIsPseudoLegal(pos, move));
 
     if (moveIsSpecial(move))
@@ -379,11 +379,11 @@ bool SEE(const Position *pos, const Move move, const int threshold) {
     Bitboard bishops = pieceBB(BISHOP) | pieceBB(QUEEN);
     Bitboard rooks   = pieceBB(ROOK  ) | pieceBB(QUEEN);
 
-    Color side = !ColorOf(pieceOn(from));
+    Color side = OtherColor(ColorOf(pieceOn(from)));
 
     // Make captures until one side runs out, or fail to beat threshold
-    while (true) {
-
+    while (true) 
+    {
         // Remove used pieces from attackers
         attackers &= occupied;
 
@@ -396,13 +396,13 @@ bool SEE(const Position *pos, const Move move, const int threshold) {
             if (myAttackers & pieceBB(pt))
                 break;
 
-        side = !side;
+        side = OtherColor(side);
 
         // Value beats threshold, or can't beat threshold (negamaxed)
-        if ((value = -value - 1 - SEEValues[pt]) >= 0) {
-
+        if ((value = -value - 1 - SEEValues[pt]) >= 0) 
+        {
             if (pt == KING && (attackers & colorBB(side)))
-                side = !side;
+                side = OtherColor(side);
 
             break;
         }
@@ -429,7 +429,7 @@ INLINE uint32_t Hash2(Key hash) { return (hash >> 16) & 0x1fff; }
 CONSTR(InitCuckoo, 3) {
     int validate = 0;
 
-    for (Color c = WHITE; c <= BLACK; ++c)
+    for (auto c : std::array<Color, 2>{WHITE, BLACK})
         for (PieceType pt = KNIGHT; pt <= KING; ++pt)
             for (Square sq1 = A1; sq1 <= H8; ++sq1)
                 for (Square sq2 = Square(sq1 + 1); sq2 <= H8; ++sq2) 
@@ -460,16 +460,16 @@ CONSTR(InitCuckoo, 3) {
 }
 
 // Upcoming repetition detection
-bool HasCycle(const Position *pos, int ply) {
-
-    for (int i = 3; i <= pos->rule50; i += 2) {
-
+bool HasCycle(const Position *pos, int ply) 
+{
+    for (int i = 3; i <= pos->rule50; i += 2) 
+    {
         const History *prev = &history(-i);
         uint32_t j;
         Key moveKey = pos->key ^ prev->key;
         if (   (j = Hash1(moveKey), cuckoo[j] == moveKey)
-            || (j = Hash2(moveKey), cuckoo[j] == moveKey)) {
-
+            || (j = Hash2(moveKey), cuckoo[j] == moveKey)) 
+        {
             Move move = cuckooMove[j];
             Square from = fromSq(move), to = toSq(move);
 
@@ -521,7 +521,8 @@ static Key GenPawnKey(const Position *pos) {
 
     Key key = 0;
 
-    for (Color c = WHITE; c <= BLACK; ++c) {
+    for (auto c : std::array<Color, 2>{WHITE, BLACK})
+    {
         Bitboard pawns = colorPieceBB(c, PAWN);
         while (pawns)
             key ^= PieceKeys[MakePiece(c, PAWN)][PopLsb(&pawns)];
@@ -545,7 +546,8 @@ bool PositionOk(const Position *pos)
         nonPawnCount[color] += NonPawn[piece];
     }
 
-    for (Color c = WHITE; c <= BLACK; ++c) {
+    for (auto c : std::array<Color, 2>{WHITE, BLACK})
+    {
         assert(PopCount(colorPieceBB(c, PAWN))   == counts[MakePiece(c, PAWN)]);
         assert(PopCount(colorPieceBB(c, KNIGHT)) == counts[MakePiece(c, KNIGHT)]);
         assert(PopCount(colorPieceBB(c, BISHOP)) == counts[MakePiece(c, BISHOP)]);
@@ -572,7 +574,7 @@ bool PositionOk(const Position *pos)
     assert(GenNonPawnKey(pos, WHITE) == pos->nonPawnKey[WHITE]);
     assert(GenNonPawnKey(pos, BLACK) == pos->nonPawnKey[BLACK]);
 
-    assert(!KingAttacked(pos, !sideToMove));
+    assert(!KingAttacked(pos, OtherColor(sideToMove)));
 
     return true;
 }
