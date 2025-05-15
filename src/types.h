@@ -18,13 +18,19 @@
 
 #pragma once
 
+#include <cstdlib>
 #include <assert.h>
 #include <inttypes.h>
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdio.h>
+using std::abs;
 
+#ifdef _MSC_VER
 #define INLINE __forceinline
+#else
+#define INLINE __attribute__((always_inline)) inline
+#endif
 
 template<class T_, class U_> INLINE T_ MIN(T_ A, U_ B) { return A < B ? A : B; }
 template<class T_, class U_> INLINE T_ MAX(T_ A, U_ B) { return A > B ? A : B; }
@@ -127,7 +133,7 @@ enum Square {
     A7, B7, C7, D7, E7, F7, G7, H7,
     A8, B8, C8, D8, E8, F8, G8, H8
 };
-constexpr inline Square operator++(Square& s) { return s = Square(s + 1); }
+inline Square operator++(Square& s) { return s = Square(s + 1); }
 inline Square operator--(Square& s) { return s = Square(s - 1); }
 inline Square operator^(Square s, int ii) { return Square(int(s) ^ ii); }
 

@@ -104,5 +104,5 @@ void StartHelpers(void (*func)(Thread*), std::vector<std::thread>* tasks);
 void WaitForHelpers(std::vector<std::thread>* tasks);
 void ResetThreads();
 void RunWithAllThreads(void *(*func)(Thread *));
-void Wait(atomic_bool *condition);
+void Wait(atomic_bool *c_var);
 void Wake();

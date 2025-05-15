@@ -26,9 +26,8 @@
 
 bool Consistent(const Position* pos, int move)
 {
-    auto mover = pieceOn(fromSq(move));
-    assert(mover);
-    assert(ColorOf(mover) == pos->stm);
+    assert(pieceOn(fromSq(move)));
+    assert(ColorOf(pieceOn(fromSq(move))) == pos->stm);
     return true;
 }
 

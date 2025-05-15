@@ -18,7 +18,10 @@
 
 #pragma once
 
+#ifdef _MSC_VER
 #include <intrin.h>
+#endif
+
 #include <array>
 #include "types.h"
 #include "board.h"
@@ -159,20 +162,27 @@ INLINE Bitboard AdjacentFilesBB(const Square sq) {
 
 // Population count/Hamming weight
 INLINE int PopCount(const Bitboard bb) {
+#ifdef _MSC_VER
     return static_cast<int>(_mm_popcnt_u64(bb));
-    // return __builtin_popcountll(bb);
+#else
+    return __builtin_popcountll(bb);
+#endif
 }
 
 // Returns the index of the least significant bit
 INLINE Square Lsb(const Bitboard bb) {
     assert(bb);
+#ifdef _MSC_VER
     unsigned long y;
     _BitScanForward64(&y, bb);
     return Square(static_cast<int>(y));
+#else
+    return Square(__builtin_ctzll(bb));
+#endif
 }
 
 // Returns the index of the least significant bit and unsets it
-INLINE Square PopLsb(Bitboard *bb) {
+INLINE Square PopLsb(Bitboard* bb) {
     Square lsb = Lsb(*bb);
     *bb &= *bb - 1;
     return lsb;
@@ -210,6 +220,7 @@ INLINE Bitboard AttackBB(PieceType pt, Square sq, Bitboard occupied)
 INLINE Bitboard XRayAttackBB(const Position *pos, const Color color, const PieceType pt, const Square sq) {
     Bitboard occ = pieceBB(ALL) ^ pieceBB(QUEEN);
     switch (pt) {
+        default: break;
         case BISHOP: occ ^= colorPieceBB(color, BISHOP); break;
         case ROOK  : occ ^= colorPieceBB(color, ROOK); break;
         case QUEEN : occ ^= colorPieceBB(color, ROOK) ^ colorPieceBB(color, BISHOP); break;

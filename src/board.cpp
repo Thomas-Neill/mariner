@@ -19,6 +19,8 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string>
+#include <cstring>
+#include <utility>
 
 #include "bitboard.h"
 #include "board.h"
@@ -39,32 +41,65 @@ uint64_t PieceKeys[PIECE_NB][64];
 uint64_t CastleKeys[16];
 uint64_t SideKey;
 
-static const std::string PieceChars = ".PNBRQK..pnbrqk";
-Piece PieceFromChar(char c)
+namespace
 {
-    return Piece(PieceChars.find(c));
-}
+    static const std::string PieceChars = ".PNBRQK..pnbrqk";
+    Piece PieceFromChar(char c)
+    {
+        return Piece(PieceChars.find(c));
+    }
+}   // leave local
 
 uint8_t CastlePerm[64];
 Bitboard CastlePath[16];
 Square RookSquare[16];
 
 INLINE constexpr int c_abs(int x) { return x > 0 ? x : -x; }
-INLINE constexpr int Dist(Square x, Square y)
+INLINE constexpr int c_max(int x, int y) { return x > y ? x : y; }
+INLINE constexpr uint8_t XDist(int x, int y)
 {
-    return std::max(c_abs(RankOf(x) - RankOf(y)), c_abs(FileOf(x) - FileOf(y)));
+    return static_cast<uint8_t>(c_max(c_abs((x / 8) - (y / 8)), c_abs((x & 7) - (y & 7))));
 }
-// Initialize distance lookup table
+
+// even in C++14 this is not needed
+template<class R, class Function, std::size_t... Indices>
+constexpr auto make_array_helper(Function f, std::index_sequence<Indices...>)
+-> std::array<R, sizeof...(Indices)>
+{
+    return { { f(Indices)... } };
+}
+
+template<class R, int N, class Function>
+constexpr auto make_array(Function f)
+-> std::array<R, N>
+{
+    return make_array_helper<R>(f, std::make_index_sequence<N>{});
+}
+
+struct DistTo { int n; DistTo(int n_in) : n(n) {} uint8_t operator()(int m) const { return XDist(m, n); } };
+
+std::array<uint8_t, 64> DistsTo(int n)
+{
+    return make_array<uint8_t, 64>(DistTo(n));
+}
+
+std::array<std::array<uint8_t, 64>, 64> SqDistance = make_array<std::array<uint8_t, 64>, 64>(DistsTo);
+
+
+/*
+// Initialize distance lookup table in C++14 or later
 constexpr std::array<std::array<uint8_t, 64>, 64> InitDistance()
 {
-    std::array<std::array<uint8_t, 64>, 64> retval;
-    for (Square sq1 = A1; sq1 <= H8; ++sq1)
-        for (Square sq2 = A1; sq2 <= H8; ++sq2) {
-            retval[sq1][sq2] = Dist(sq1, sq2);
+    std::array<std::array<uint8_t, 64>, 64> retval = {};
+    for (int sq1 = A1; sq1 <= H8; ++sq1)
+        for (int sq2 = A1; sq2 <= H8; ++sq2) {
+            retval[sq1][sq2] = XDist(sq1, sq2);
         }
     return retval;
 }
 constexpr std::array<std::array<uint8_t, 64>, 64> SqDistance = InitDistance();
+*/
+
 int Distance(Square sq1, Square sq2) { return SqDistance[sq1][sq2]; }
 
 // Pseudo-random number generator

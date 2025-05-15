@@ -161,9 +161,9 @@ void RunWithAllThreads(void *(*func)(Thread *)) {
 std::condition_variable sleepCond;
 std::mutex sleepMutex;
 
-void Wait(atomic_bool* condition) {
+void Wait(atomic_bool* c_var) {
     std::unique_lock<std::mutex> lock(sleepMutex);
-    sleepCond.wait(lock, [&]{ return bool(*condition); });
+    sleepCond.wait(lock, [&]{ return bool(*c_var); });
 }
 
 // Wakes up a sleeping thread
