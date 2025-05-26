@@ -8,6 +8,7 @@ weiss
 # VS code settings
 .vscode/*
 *.json
+windows/.vs/*
 
 # Files used for profile guided optimization
 *.gcda
@@ -20,6 +21,7 @@ weiss
 *.ko
 *.obj
 *.elf
+windows/x64/*
 
 # Linker output
 *.ilk

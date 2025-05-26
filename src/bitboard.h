@@ -18,6 +18,10 @@
 
 #pragma once
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
+
 #include "types.h"
 #include "board.h"
 
@@ -82,7 +86,7 @@ typedef struct {
 #endif
 } Magic;
 
-enum {
+enum some_bitboards: uint64_t {
     fileABB = 0x0101010101010101,
     fileBBB = 0x0202020202020202,
     fileCBB = 0x0404040404040404,
@@ -153,13 +157,23 @@ INLINE Bitboard AdjacentFilesBB(const Square sq) {
 
 // Population count/Hamming weight
 INLINE int PopCount(const Bitboard bb) {
+#ifdef _MSC_VER
+    return static_cast<int>(_mm_popcnt_u64(bb)); 
+#else
     return __builtin_popcountll(bb);
+#endif
 }
 
 // Returns the index of the least significant bit
 INLINE int Lsb(const Bitboard bb) {
     assert(bb);
+#ifdef _MSC_VER
+    unsigned long y;
+    _BitScanForward64(&y, bb);
+    return static_cast<int>(y);
+#else
     return __builtin_ctzll(bb);
+#endif
 }
 
 // Returns the index of the least significant bit and unsets it

@@ -17,14 +17,13 @@
 */
 
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 #include <winsock2.h>
 #undef INFINITE
-
 #else
+#include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
@@ -73,7 +72,7 @@ char *Query(const char *hostname, char *message) {
     SOCKADDR_IN server = {};
     server.sin_family = AF_INET;
     server.sin_port = htons(80);
-    server.sin_addr.s_addr = *(uint64_t *)hostent->h_addr;
+    server.sin_addr.s_addr = *(unsigned long *)hostent->h_addr;
 
     // Connect
     if (connect(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0)
@@ -90,7 +89,11 @@ char *Query(const char *hostname, char *message) {
         error("ERROR receiving");
 
     // Cleanup
+#ifdef _MSC_VER
+    closesocket(sockfd);
+#else
     close(sockfd);
+#endif
     WSACleanup();
 
     return puts("info string Query: Response received"), response;

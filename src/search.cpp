@@ -45,7 +45,7 @@ static int Reductions[2][32][32];
 
 
 // Initializes the late move reduction array
-CONSTR(1) InitReductions() {
+CONSTR(1, InitReductions) {
     for (int depth = 1; depth < 32; ++depth)
         for (int moves = 1; moves < 32; ++moves)
             Reductions[0][depth][moves] = 0.38 + log(depth) * log(moves) / 3.76, // capture

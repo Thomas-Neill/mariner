@@ -101,16 +101,32 @@ INLINE bool TTScoreIsMoreInformative(uint8_t bound, int ttScore, int score) {
 }
 
 INLINE uint64_t TTIndex(Key key) {
+    // top 64 bits of 128-bit product
+#ifdef _MSC_VER
+    constexpr uint64_t HI = 0xFFFFFFFF00000000, LO = HI >> 32;
+    return (((key & HI) >> 32) * ((TT.count & HI) >> 32) + ((key & LO) * ((TT.count & HI) >> 32) + ((key & HI) >> 32) * (TT.count & LO))) >> 32;
+#else
     return ((unsigned __int128)key * (unsigned __int128)TT.count) >> 64;
+#endif
 }
+
 
 INLINE TTBucket *GetTTBucket(Key key) {
     // https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/
     return &TT.table[TTIndex(key)];
 }
 
+#ifdef _MSC_VER
+template<class T> void prefetch(T* p)
+{
+    _mm_prefetch(reinterpret_cast<const char*>(p), _MM_HINT_NTA);
+}
+#else
+#define prefetch __builtin_prefetch
+#endif
+
 INLINE void TTPrefetch(Key key) {
-    __builtin_prefetch(GetTTBucket(key));
+    prefetch(GetTTBucket(key));
 }
 
 INLINE void RequestTTSize(int megabytes) {

@@ -49,7 +49,7 @@ Square RookSquare[16];
 
 
 // Initialize distance lookup table
-CONSTR(1) InitDistance() {
+CONSTR(1, InitDistance) {
     for (Square sq1 = A1; sq1 <= H8; ++sq1)
         for (Square sq2 = A1; sq2 <= H8; ++sq2) {
             int vertical   = abs(RankOf(sq1) - RankOf(sq2));
@@ -75,8 +75,8 @@ static uint64_t Rand64() {
 }
 
 // Inits zobrist key tables
-CONSTR(1) InitHashKeys() {
-
+CONSTR(1, InitHashKeys) 
+{
     // Side to play
     SideKey = Rand64();
 
@@ -232,11 +232,11 @@ void ParseFen(const char *fen, Position *pos) {
     // Piece locations
     Square sq = A8;
     while ((c = *token++))
-        switch (c) {
-            case '/': sq -= 16; break;
-            case '1' ... '8': sq += c - '0'; break;
-            default: AddPiece(pos, sq++, strchr(PieceChars, c) - PieceChars);
-        }
+    {
+        if (c == '/') sq -= 16;
+        else if (c >= '1' && c <= '8') sq += c - '0';
+        else AddPiece(pos, sq++, Piece(strchr(PieceChars, c) - PieceChars));
+    }
 
     // Side to move
     sideToMove = *strtok(NULL, " ") == 'w' ? WHITE : BLACK;
@@ -250,12 +250,10 @@ void ParseFen(const char *fen, Position *pos) {
         Square rsq;
         Color color = islower(c) ? BLACK : WHITE;
         c = toupper(c);
-        switch (c) {
-            case 'K': for (rsq = RelativeSquare(color, H1); pieceTypeOn(rsq) != ROOK; --rsq); break;
-            case 'Q': for (rsq = RelativeSquare(color, A1); pieceTypeOn(rsq) != ROOK; ++rsq); break;
-            case 'A' ... 'H': rsq = RelativeSquare(color, MakeSquare(RANK_1, c - 'A')); break;
-            default: continue;
-        }
+        if (c == 'K') { for (rsq = RelativeSquare(color, H1); pieceTypeOn(rsq) != ROOK; --rsq); }
+        else if (c == 'Q') { for (rsq = RelativeSquare(color, A1); pieceTypeOn(rsq) != ROOK; ++rsq); }
+        else if (c >= 'A' && c <= 'H') { rsq = RelativeSquare(color, MakeSquare(RANK_1, c - 'A')); }
+        else continue;
         InitCastlingRight(pos, color, FileOf(rsq));
     }
 
@@ -425,7 +423,7 @@ INLINE uint32_t Hash2(Key hash) { return (hash >> 16) & 0x1fff; }
     y = temp;           \
 }
 
-CONSTR(3) InitCuckoo() {
+CONSTR(3, InitCuckoo) {
     int validate = 0;
 
     for (Color c = WHITE; c <= BLACK; c++)
@@ -478,7 +476,7 @@ bool HasCycle(const Position *pos, int ply) {
             if (ply > i)
                 return true;
 
-            if (ColorOf(pieceOn(from) ?: pieceOn(to)) != sideToMove)
+            if (ColorOf(pieceOn(from) ? pieceOn(from) : pieceOn(to)) != sideToMove)
                 continue;
 
             for (int k = i + 4; k <= pos->rule50; k += 2) {
