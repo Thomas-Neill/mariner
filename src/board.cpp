@@ -49,7 +49,7 @@ Square RookSquare[16];
 
 
 // Initialize distance lookup table
-CONSTR(1) InitDistance() {
+CONSTR(1, InitDistance) {
     for (Square sq1 = A1; sq1 <= H8; ++sq1)
         for (Square sq2 = A1; sq2 <= H8; ++sq2) {
             int vertical   = abs(RankOf(sq1) - RankOf(sq2));
@@ -75,8 +75,8 @@ static uint64_t Rand64() {
 }
 
 // Inits zobrist key tables
-CONSTR(1) InitHashKeys() {
-
+CONSTR(1, InitHashKeys) 
+{
     // Side to play
     SideKey = Rand64();
 
@@ -425,7 +425,7 @@ INLINE uint32_t Hash2(Key hash) { return (hash >> 16) & 0x1fff; }
     y = temp;           \
 }
 
-CONSTR(3) InitCuckoo() {
+CONSTR(3, InitCuckoo) {
     int validate = 0;
 
     for (Color c = WHITE; c <= BLACK; c++)

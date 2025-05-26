@@ -82,7 +82,7 @@ typedef struct {
 #endif
 } Magic;
 
-enum {
+enum some_bitboards: uint64_t {
     fileABB = 0x0101010101010101,
     fileBBB = 0x0202020202020202,
     fileCBB = 0x0404040404040404,

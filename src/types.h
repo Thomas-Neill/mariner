@@ -23,13 +23,19 @@
 #include <stdio.h>
 #include <atomic>
 
+#ifdef _MSC_VER
+#define INLINE __forceinline
+#define CONSTR(prio, func) void func()
+#else
+#define INLINE static inline __attribute__((always_inline))
+#define CONSTR(prio, func) static __attribute__((constructor (1000 + prio))) void func()
+#endif
+
 
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
 #define CLAMP(x, low, high)  (MIN((high), MAX((x), (low))))
 
-#define INLINE static inline __attribute__((always_inline))
-#define CONSTR(prio) static __attribute__((constructor (1000 + prio))) void
 
 #define loadRelaxed(x) atomic_load_explicit(&(x), std::memory_order_relaxed)
 
