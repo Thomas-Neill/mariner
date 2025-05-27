@@ -48,8 +48,8 @@ static int Reductions[2][32][32];
 CONSTR(1, InitReductions) {
     for (int depth = 1; depth < 32; ++depth)
         for (int moves = 1; moves < 32; ++moves)
-            Reductions[0][depth][moves] = 0.38 + log(depth) * log(moves) / 3.76, // capture
-            Reductions[1][depth][moves] = 2.01 + log(depth) * log(moves) / 2.32; // quiet
+            Reductions[0][depth][moves] = static_cast<int>(0.38 + log(depth) * log(moves) / 3.76), // capture
+            Reductions[1][depth][moves] = static_cast<int>(2.01 + log(depth) * log(moves) / 2.32); // quiet
 }
 
 // Checks whether a move was already searched in multi-pv mode
@@ -64,7 +64,7 @@ static bool AlreadySearchedMultiPV(Thread *thread, Move move) {
 static int CorrectEval(Thread *thread, Stack *ss, int eval, int rule50) {
     int correctedEval = eval + GetCorrectionHistory(thread, ss);
     if (rule50 > 7)
-        correctedEval *= (256 - rule50) / 256.0;
+        correctedEval *= (256 - rule50) / 256;
     return CLAMP(correctedEval, -TBWIN_IN_MAX + 1, TBWIN_IN_MAX - 1);
 }
 
@@ -376,7 +376,7 @@ static int AlphaBeta(Thread *thread, Stack *ss, int alpha, int beta, Depth depth
         && eval >= ss->staticEval
         && ss->staticEval >= beta + 138 - 13 * depth
         && (ss-1)->histScore < 28500
-        && pos->nonPawnCount[sideToMove] > (depth > 8)) {
+        && pos->nonPawnCount[sideToMove] > (depth > 8 ? 1 : 0)) {
 
         Depth reduction = 4 + depth / 4 + MIN(3, (eval - beta) / 227);
 
@@ -448,7 +448,7 @@ move_loop:
 
         if (move == ss->excluded) continue;
         if (root && AlreadySearchedMultiPV(thread, move)) continue;
-        if (root && NotInSearchMoves(Limits.searchmoves, move)) continue;
+        if (root && NotInSearchMoves(&Limits.searchmoves[0], move)) continue;
         if (!MoveIsLegal(pos, move)) continue;
 
         moveCount++;
@@ -675,7 +675,7 @@ static void AspirationWindow(Thread *thread, Stack *ss) {
 
         thread->doPruning =
             Limits.infinite ? TimeSince(Limits.start) > 1000
-                            :   TimeSince(Limits.start) >= Limits.optimalUsage / 64
+                            : TimeSince(Limits.start) >= Limits.optimalUsage / 64
                              || depth > 2 + Limits.optimalUsage / 270
                              || Limits.nodeTime;
 
@@ -783,7 +783,7 @@ void *SearchPosition(void *_pos) {
 
     InitTimeManagement();
     TTNewSearch();
-    PrepareSearch(pos, Limits.searchmoves);
+    PrepareSearch(pos, &Limits.searchmoves[0]);
 
     // Probe TBs for a move if already in a TB position
     if (SyzygyMove(pos)) goto conclusion;

@@ -87,7 +87,7 @@ static const char *BenchmarkFENs[] = {
 };
 
 typedef struct BenchResult {
-    TimePoint elapsed;
+    int elapsed;
     uint64_t nodes;
     int score;
     Move best;
@@ -104,9 +104,9 @@ void Benchmark(int argc, char **argv) {
     InitThreads(threadCount);
     InitTT();
 
-    int FENCount = sizeof(BenchmarkFENs) / sizeof(char *);
+    constexpr int FENCount = sizeof(BenchmarkFENs) / sizeof(char *);
     BenchResult results[FENCount];
-    TimePoint totalElapsed = 1; // Avoid possible div/0
+    int64_t totalElapsed = 1; // Avoid possible div/0
     uint64_t totalNodes = 0;
 
     for (int i = 0; i < FENCount; ++i) {
@@ -187,7 +187,7 @@ void Perft(char *str) {
 
     const TimePoint start = Now();
     uint64_t leafNodes = RecursivePerft(&Threads->pos, depth);
-    const TimePoint elapsed = TimeSince(start) + 1;
+    const int64_t elapsed = TimeSince(start) + 1;
 
     printf("\nPerft complete:"
            "\nTime : %" PRId64 "ms"

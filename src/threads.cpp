@@ -80,8 +80,8 @@ uint64_t TotalTBHits() {
 }
 
 // Setup threads for a new search
-void PrepareSearch(Position *pos, Move searchmoves[]) {
-
+void PrepareSearch(Position *pos, Move* searchmoves) 
+{
     MoveList legalMoves;
     legalMoves.count = legalMoves.next = 0;
     GenLegalMoves(pos, &legalMoves);

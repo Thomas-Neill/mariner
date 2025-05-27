@@ -19,6 +19,7 @@
 #include "search.h"
 #include "time.h"
 #include "types.h"
+#include "threads.h"
 
 
 // Decide how much time to spend this turn

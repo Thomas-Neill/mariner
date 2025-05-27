@@ -65,8 +65,6 @@ typedef uint64_t Key;
 typedef uint32_t Move;
 typedef uint32_t Square;
 
-typedef int64_t TimePoint;
-
 typedef int32_t Depth;
 typedef int32_t Color;
 typedef int32_t Piece;

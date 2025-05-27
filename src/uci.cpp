@@ -35,9 +35,12 @@
 
 
 // Parses the time controls
-static void ParseTimeControl(const char *str, const Position *pos) {
-
-    memset(&Limits, 0, offsetof(SearchLimits, multiPV));
+static void ParseTimeControl(const char *str, const Position *pos) 
+{
+    Limits.time = Limits.inc = Limits.movestogo = Limits.movetime = Limits.depth = Limits.optimalUsage = Limits.maxUsage = Limits.mate = 0;
+    Limits.timelimit = Limits.nodeTime = Limits.infinite = false;
+    Limits.searchmoves = {};
+    Limits.nodes = 0;
     Limits.start = Now();
 
     // Parse relevant search constraints
@@ -60,7 +63,7 @@ static void ParseTimeControl(const char *str, const Position *pos) {
 
     Limits.timelimit = Limits.time || Limits.movetime;
     Limits.nodeTime = Limits.nodes;
-    Limits.depth = Limits.depth ?: 100;
+    Limits.depth = Limits.depth ? Limits.depth : 100;
 }
 
 // Parses the given limits and creates a new thread to start the search
@@ -233,7 +236,7 @@ void PrintThinking(const Thread *thread, int alpha, int beta) {
 
     const Position *pos = &thread->pos;
 
-    TimePoint elapsed = TimeSince(Limits.start);
+    int64_t elapsed   = TimeSince(Limits.start);
     uint64_t nodes    = TotalNodes();
     uint64_t tbhits   = TotalTBHits();
     int hashFull      = HashFull();

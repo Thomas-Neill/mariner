@@ -148,9 +148,9 @@ Move ParseMove(const char *str, const Position *pos) {
     return MOVE(from, to, pieceOn(from), pieceOn(to), promo, flag);
 }
 
-// Checks if the move is in the list of searchmoves if any were given
-bool NotInSearchMoves(Move searchmoves[], Move move) {
-    if (searchmoves[0] == NOMOVE) return false;
+// Checks if the list exists, but does not contain the move
+bool NotInSearchMoves(Move* searchmoves, Move move) {
+    if (*searchmoves == NOMOVE) return false;
     for (Move *m = searchmoves; *m != NOMOVE; ++m)
         if (*m == move)
             return false;

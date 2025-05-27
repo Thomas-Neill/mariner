@@ -18,19 +18,20 @@
 
 #pragma once
 
+#include <array>
 #include "board.h"
 #include "types.h"
-
+#include "time.h"
 
 typedef struct {
-    TimePoint start;
     int time, inc, movestogo, movetime, depth;
     uint64_t nodes;
     int optimalUsage, maxUsage;
     int mate;
     bool timelimit, nodeTime, infinite;
-    Move searchmoves[64];
+    std::array<Move, 64> searchmoves;
     int multiPV;
+    TimePoint start;
 } SearchLimits;
 
 
