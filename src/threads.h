@@ -19,16 +19,19 @@
 #pragma once
 
 #include <setjmp.h>
+#include <thread>
+#include <vector>
+#include <stdatomic.h>
 
 #include "board.h"
 #include "evaluate.h"
 #include "types.h"
 
 
-#define SS_OFFSET 10
-#define MULTI_PV_MAX 64
-#define PAWN_HISTORY_SIZE 512
-#define CORRECTION_HISTORY_SIZE 16384
+constexpr int SS_OFFSET = 10;
+constexpr int MULTI_PV_MAX = 64;
+constexpr int PAWN_HISTORY_SIZE = 512;
+constexpr int CORRECTION_HISTORY_SIZE = 16384;
 
 typedef int16_t ButterflyHistory[COLOR_NB][64][64];
 typedef int16_t PawnHistory[PAWN_HISTORY_SIZE][PIECE_NB][64];
@@ -90,7 +93,7 @@ typedef struct Thread {
 } Thread;
 
 
-extern Thread *Threads;
+extern std::vector<Thread> Threads;
 
 
 void InitThreads(int threadCount);
@@ -98,10 +101,9 @@ void SortRootMoves(Thread *thread, int begin);
 uint64_t TotalNodes();
 uint64_t TotalTBHits();
 void PrepareSearch(Position *pos, Move searchmoves[]);
-void StartMainThread(void *(*func)(void *), Position *pos);
-void StartHelpers(void *(*func)(void *));
-void WaitForHelpers();
+void StartHelpers(void (*func)(Thread*), std::vector<std::thread>* tasks);
+void WaitForHelpers(std::vector<std::thread>* tasks);
 void ResetThreads();
-void RunWithAllThreads(void *(*func)(void *));
+void RunWithAllThreads(void (*func)(Thread *));
 void Wait(std::atomic_bool *condition);
 void Wake();

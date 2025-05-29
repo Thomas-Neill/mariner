@@ -20,6 +20,10 @@
 
 #include <math.h>
 
+#ifdef _MSC_VER
+#include <xmmintrin.h>
+#endif
+
 #include "threads.h"
 #include "types.h"
 
@@ -119,7 +123,7 @@ INLINE TTBucket *GetTTBucket(Key key) {
 #ifdef _MSC_VER
 template<class T> void prefetch(T* p)
 {
-    _mm_prefetch(reinterpret_cast<const char*>(p), _MM_HINT_NTA);
+    _mm_prefetch(reinterpret_cast<const char*>(p), _MM_HINT_T0);
 }
 #else
 #define prefetch __builtin_prefetch

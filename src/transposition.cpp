@@ -58,11 +58,13 @@ void StoreTTEntry(TTEntry *tte, Key key, Move move, int score, int eval, Depth d
     // Store new data unless it would overwrite data about the same
     // position searched to a higher depth.
     if ((int32_t)key != tte->key || depth + 4 >= tte->depth || bound == BOUND_EXACT || Age(tte))
-        tte->key   = key,
-        tte->score = score,
-        tte->eval  = eval,
-        tte->depth = depth,
+    {
+        tte->key = (int32_t)key;
+        tte->score = score;
+        tte->eval = eval;
+        tte->depth = depth;
         tte->genBound = TT.generation | bound;
+    }
 }
 
 // Estimates the load factor of the transposition table (1 = 0.1%)
@@ -78,25 +80,24 @@ int HashFull() {
     return used / BUCKET_SIZE;
 }
 
-static void *ThreadClearTT(void *voidThread) {
+namespace
+{
+    void ThreadClearTT(Thread* thread)
+    {
+        int index = thread->index;
+        int count = thread->count;
 
-    Thread *thread = (Thread*)voidThread;
-    int index = thread->index;
-    int count = thread->count;
+        // Logic for dividing the work taken from CFish
+        uint64_t twoMB = 2 * 1024 * 1024;
+        uint64_t size = TT.count * sizeof(TTBucket);
+        uint64_t slice = (size + count - 1) / count;
+        uint64_t blocks = (slice + twoMB - 1) / twoMB;
+        uint64_t begin = MIN(size, index * blocks * twoMB);
+        uint64_t end = MIN(size, begin + blocks * twoMB);
 
-    // Logic for dividing the work taken from CFish
-    uint64_t twoMB  = 2 * 1024 * 1024;
-    uint64_t size   = TT.count * sizeof(TTBucket);
-    uint64_t slice  = (size + count - 1) / count;
-    uint64_t blocks = (slice + twoMB - 1) / twoMB;
-    uint64_t begin  = MIN(size, index * blocks * twoMB);
-    uint64_t end    = MIN(size, begin + blocks * twoMB);
-
-    memset(TT.table + begin / sizeof(TTBucket), 0, end - begin);
-
-    return NULL;
+        memset(TT.table + begin / sizeof(TTBucket), 0, end - begin);
+    }
 }
-
 // Clears the transposition table
 void ClearTT() {
     if (!TT.dirty) return;

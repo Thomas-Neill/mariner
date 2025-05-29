@@ -16,36 +16,32 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <pthread.h>
+#include <thread>
+#include <condition_variable>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
 
 #include "movegen.h"
 #include "threads.h"
 
 
-Thread *Threads;
-static pthread_t *pthreads;
-
-// Used for letting the main thread sleep without using cpu
-static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t sleepCondition = PTHREAD_COND_INITIALIZER;
+std::vector<Thread> Threads;
 
 
 // Allocates memory for thread structs
-void InitThreads(int count) {
-
-    if (Threads)  free(Threads);
-    if (pthreads) free(pthreads);
-
-    Threads  = (Thread*)calloc(count, sizeof(Thread));
-    pthreads = (pthread_t*)calloc(count, sizeof(pthread_t));
+void InitThreads(int count) 
+{
+    Threads.clear();
+    Threads.resize(count);
 
     // Each thread knows its own index and total thread count
     for (int i = 0; i < count; ++i)
+    {
         Threads[i].index = i,
         Threads[i].count = count;
+    }
 }
 
 // Sorts all rootmoves beginning from the given index
@@ -66,27 +62,27 @@ void SortRootMoves(Thread *thread, int begin) {
 // Tallies the nodes searched by all threads
 uint64_t TotalNodes() {
     uint64_t total = 0;
-    for (int i = 0; i < Threads->count; ++i)
-        total += Threads[i].pos.nodes;
+    for (const auto& t: Threads)
+        total += t.pos.nodes;
     return total;
 }
 
 // Tallies the tbhits of all threads
 uint64_t TotalTBHits() {
     uint64_t total = 0;
-    for (int i = 0; i < Threads->count; ++i)
-        total += Threads[i].tbhits;
+    for (const auto& t: Threads)
+        total += t.tbhits;
     return total;
 }
 
 // Setup threads for a new search
-void PrepareSearch(Position *pos, Move* searchmoves) 
+void PrepareSearch(Position *pos, Move searchmoves[]) 
 {
     MoveList legalMoves;
     legalMoves.count = legalMoves.next = 0;
     GenLegalMoves(pos, &legalMoves);
 
-    RootMove rootMoves[256] = {};
+    RootMove rootMoves[256] = { 0 };
     int rootMoveCount = 0;
 
     // Add legal searchmoves to the root moves by checking if it is in the legalMoves list
@@ -100,75 +96,79 @@ void PrepareSearch(Position *pos, Move* searchmoves)
         for (int i = 0; i < legalMoves.count; ++i)
             rootMoves[rootMoveCount++].move = legalMoves.moves[i].move;
 
-    for (Thread *t = Threads; t < Threads + Threads->count; ++t) {
-        memset(t, 0, offsetof(Thread, pos));
-        memcpy(&t->pos, pos, sizeof(Position));
-        memcpy(t->rootMoves, rootMoves, sizeof(rootMoves));
-        t->rootMoveCount = rootMoveCount;
+    for (auto& t : Threads) {
+        memset(&t, 0, offsetof(Thread, pos));
+        memcpy(&t.pos, pos, sizeof(Position));
+        memcpy(t.rootMoves, rootMoves, sizeof(rootMoves));
+        t.rootMoveCount = rootMoveCount;
         for (Depth d = 0; d <= MAX_PLY; ++d)
-            (t->ss+SS_OFFSET+d)->ply = d;
+            (t.ss+SS_OFFSET+d)->ply = d;
         for (Depth d = -7; d < 0; ++d)
-            (t->ss+SS_OFFSET+d)->continuation = &t->continuation[0][0][EMPTY][0],
-            (t->ss+SS_OFFSET+d)->contCorr = &t->contCorrHistory[EMPTY][0];
+            (t.ss+SS_OFFSET+d)->continuation = &t.continuation[0][0][EMPTY][0],
+            (t.ss+SS_OFFSET+d)->contCorr = &t.contCorrHistory[EMPTY][0];
     }
-}
-
-// Start the main thread running the provided function
-void StartMainThread(void *(*func)(void *), Position *pos) {
-    pthread_create(&pthreads[0], NULL, func, pos);
-    pthread_detach(pthreads[0]);
 }
 
 static bool helpersActive = false;
 
 // Start helper threads running the provided function
-void StartHelpers(void *(*func)(void *)) {
+void StartHelpers(void (*func)(Thread*), std::vector<std::thread>* tasks) 
+{
     helpersActive = true;
-    for (int i = 1; i < Threads->count; ++i)
-        pthread_create(&pthreads[i], NULL, func, &Threads[i]);
+    tasks->clear();
+    for (auto& t : Threads)
+        tasks->push_back(std::thread(func, &t));
 }
 
 // Wait for helper threads to finish
-void WaitForHelpers() {
-    if (!helpersActive) return;
-    for (int i = 1; i < Threads->count; ++i)
-        pthread_join(pthreads[i], NULL);
-    helpersActive = false;
+void WaitForHelpers(std::vector<std::thread>* tasks) 
+{
+    if (helpersActive)
+    {
+        for (auto& t : *tasks)
+            t.join();
+        tasks->clear();
+        helpersActive = false;
+    }
 }
 
 // Reset all data that isn't reset each turn
-void ResetThreads() {
-    for (int i = 0; i < Threads->count; ++i)
-        memset(Threads[i].pawnCache,       0, sizeof(PawnCache)),
-        memset(Threads[i].history,         0, sizeof(Threads[i].history)),
-        memset(Threads[i].pawnHistory,     0, sizeof(Threads[i].pawnHistory)),
-        memset(Threads[i].captureHistory,  0, sizeof(Threads[i].captureHistory)),
-        memset(Threads[i].continuation,    0, sizeof(Threads[i].continuation)),
-        memset(Threads[i].pawnCorrHistory, 0, sizeof(Threads[i].pawnCorrHistory)),
-        memset(Threads[i].minorCorrHistory,0, sizeof(Threads[i].minorCorrHistory)),
-        memset(Threads[i].majorCorrHistory,0, sizeof(Threads[i].majorCorrHistory)),
-        memset(Threads[i].contCorrHistory, 0, sizeof(Threads[i].contCorrHistory));
+void ResetThreads() 
+{
+    for (auto& t : Threads)
+        memset(t.pawnCache,       0, sizeof(PawnCache)),
+        memset(t.history,         0, sizeof(t.history)),
+        memset(t.pawnHistory,     0, sizeof(t.pawnHistory)),
+        memset(t.captureHistory,  0, sizeof(t.captureHistory)),
+        memset(t.continuation,    0, sizeof(t.continuation)),
+        memset(t.pawnCorrHistory, 0, sizeof(t.pawnCorrHistory)),
+        memset(t.minorCorrHistory,0, sizeof(t.minorCorrHistory)),
+        memset(t.majorCorrHistory,0, sizeof(t.majorCorrHistory)),
+        memset(t.contCorrHistory, 0, sizeof(t.contCorrHistory));
 }
 
 // Run the given function once in each thread
-void RunWithAllThreads(void *(*func)(void *)) {
-    for (int i = 0; i < Threads->count; ++i)
-        pthread_create(&pthreads[i], NULL, func, &Threads[i]);
-    for (int i = 0; i < Threads->count; ++i)
-        pthread_join(pthreads[i], NULL);
+void RunWithAllThreads(void (*func)(Thread *)) 
+{
+    std::vector<std::thread> tasks;
+    for (auto& t : Threads)
+        tasks.push_back(std::thread(func, &t));
+    for (auto& task : tasks)
+        task.join();
 }
 
 // Thread sleeps until it is woken up
-void Wait(std::atomic_bool *condition) {
-    pthread_mutex_lock(&mutex);
-    while (!atomic_load(condition))
-        pthread_cond_wait(&sleepCondition, &mutex);
-    pthread_mutex_unlock(&mutex);
+
+std::condition_variable sleepCond;
+std::mutex sleepMutex;
+
+void Wait(std::atomic_bool* condition) {
+    std::unique_lock<std::mutex> lock(sleepMutex);
+    sleepCond.wait(lock, [&]{ return bool(*condition); });
 }
 
 // Wakes up a sleeping thread
 void Wake() {
-    pthread_mutex_lock(&mutex);
-    pthread_cond_signal(&sleepCondition);
-    pthread_mutex_unlock(&mutex);
+    std::lock_guard<std::mutex> lock(sleepMutex);
+    sleepCond.notify_one();
 }

@@ -117,7 +117,7 @@ static bool SyzygyMove(const Position *pos) {
     fflush(stdout);
 
     // Set move to be printed as conclusion
-    Threads->rootMoves[0].move = move;
+    Threads[0].rootMoves[0].move = move;
 
     return true;
 }

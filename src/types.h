@@ -37,8 +37,6 @@
 #define CLAMP(x, low, high)  (MIN((high), MAX((x), (low))))
 
 
-#define loadRelaxed(x) atomic_load_explicit(&(x), std::memory_order_relaxed)
-
 #define lastMoveNullMove (!root && (ss-1)->move == NOMOVE)
 #define history(offset) (pos->gameHistory[pos->histPly + offset])
 

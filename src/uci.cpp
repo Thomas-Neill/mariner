@@ -71,7 +71,8 @@ INLINE void Go(Position *pos, char *str) {
     ABORT_SIGNAL = false;
     InitTT();
     ParseTimeControl(str, pos);
-    StartMainThread(SearchPosition, pos);
+    std::thread t(SearchPosition, pos);
+    t.detach();
 }
 
 // Parses a 'position' and sets up the board

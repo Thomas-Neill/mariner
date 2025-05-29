@@ -80,6 +80,8 @@ static void UpdatePv(Stack *ss, Move move) {
     memcpy(ss->pv.line+1, (ss+1)->pv.line, sizeof(Move) * (ss+1)->pv.length);
 }
 
+#define loadRelaxed(x) atomic_load_explicit(&(x), std::memory_order_relaxed)
+
 // Quiescence
 static int Quiescence(Thread *thread, Stack *ss, int alpha, int beta) {
 
@@ -715,9 +717,8 @@ static void AspirationWindow(Thread *thread, Stack *ss) {
 }
 
 // Iterative deepening
-static void *IterativeDeepening(void *voidThread) {
-
-    Thread *thread = (Thread*)voidThread;
+static void IterativeDeepening(Thread* thread) 
+{
     Position *pos = &thread->pos;
     Stack *ss = thread->ss+SS_OFFSET;
     bool mainThread = thread->index == 0;
@@ -771,8 +772,6 @@ static void *IterativeDeepening(void *voidThread) {
             thread->depth--;
         PrintThinking(thread, -INFINITE, INFINITE);
     }
-
-    return NULL;
 }
 
 // Root of search
@@ -785,27 +784,28 @@ void *SearchPosition(void *_pos) {
     TTNewSearch();
     PrepareSearch(pos, &Limits.searchmoves[0]);
 
+    std::vector<std::thread> tasks;
     // Probe TBs for a move if already in a TB position
-    if (SyzygyMove(pos)) goto conclusion;
-
-    // Probe noobpwnftw's Chess Cloud Database
-    if (ProbeNoob(pos)) goto conclusion;
-
-    // Start helper threads and begin searching
-    StartHelpers(IterativeDeepening);
-    IterativeDeepening(&Threads[0]);
-
-conclusion:
+    if (!SyzygyMove(pos))
+    {
+        // Probe noobpwnftw's Chess Cloud Database
+        if (!ProbeNoob(pos))
+        {
+            // Start helper threads and begin searching
+            StartHelpers(IterativeDeepening, &tasks);
+            IterativeDeepening(&Threads[0]);
+        }
+    }
 
     // Wait for 'stop' in infinite search
     if (Limits.infinite) Wait(&ABORT_SIGNAL);
 
     // Signal helper threads to stop and wait for them to finish
     ABORT_SIGNAL = true;
-    WaitForHelpers();
+    WaitForHelpers(&tasks);
 
     // Print the best move found
-    PrintBestMove(Threads->rootMoves[0].move);
+    PrintBestMove(Threads[0].rootMoves[0].move);
 
     SEARCH_STOPPED = true;
 
