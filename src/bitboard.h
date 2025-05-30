@@ -198,8 +198,8 @@ INLINE int PieceCount(const Position *pos, Piece piece) {
 }
 
 // Returns the attack bitboard for the piecetype on the given square
-INLINE Bitboard AttackBB(PieceType pt, Square sq, Bitboard occupied) {
-
+INLINE Bitboard AttackBB(PieceType pt, Square sq, Bitboard occupied) 
+{
     assert(pt != PAWN);
 
     switch (pt) {

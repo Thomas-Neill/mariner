@@ -46,16 +46,13 @@ void InitTimeManagement() {
 
     // Basetime for the whole game
     if (!Limits.movestogo) {
-        double scale = 0.022;
-        Limits.optimalUsage = MIN(timeLeft * scale, 0.2 * Limits.time);
-
-    // X moves in Y time
+        Limits.optimalUsage = static_cast<int>(MIN(0.022 * timeLeft, 0.2 * Limits.time));
     } else {
-        double scale = 0.7 / mtg;
-        Limits.optimalUsage = MIN(timeLeft * scale, 0.8 * Limits.time);
+        // X moves in Y time
+        Limits.optimalUsage = static_cast<int>(MIN(timeLeft * 0.7 / mtg, 0.8 * Limits.time));
     }
 
-    Limits.maxUsage = MIN(5 * Limits.optimalUsage, 0.8 * Limits.time);
+    Limits.maxUsage = static_cast<int>(MIN(5 * Limits.optimalUsage, 0.8 * Limits.time));
 }
 
 // Check time situation

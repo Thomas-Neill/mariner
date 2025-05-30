@@ -19,6 +19,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <utility>
 
 #include "bitboard.h"
 #include "board.h"
@@ -416,12 +417,6 @@ static Move cuckooMove[8192];
 
 INLINE uint32_t Hash1(Key hash) { return  hash        & 0x1fff; }
 INLINE uint32_t Hash2(Key hash) { return (hash >> 16) & 0x1fff; }
-
-#define Swap(x, y) {    \
-    typeof(x) temp = x; \
-    x = y;              \
-    y = temp;           \
-}
 
 CONSTR(3, InitCuckoo) {
     int validate = 0;

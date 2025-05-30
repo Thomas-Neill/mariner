@@ -146,8 +146,8 @@ CONSTR(2, InitBitboards)
 }
 
 // Returns a bitboard with all attackers of a square
-Bitboard Attackers(const Position *pos, const Square sq, const Bitboard occ) {
-
+Bitboard Attackers(const Position *pos, const Square sq, const Bitboard occ) 
+{
     const Bitboard bishops = pieceBB(BISHOP) | pieceBB(QUEEN);
     const Bitboard rooks   = pieceBB(ROOK)   | pieceBB(QUEEN);
 
