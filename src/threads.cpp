@@ -116,8 +116,9 @@ void StartHelpers(void (*func)(Thread*), std::vector<std::thread>* tasks)
 {
     helpersActive = true;
     tasks->clear();
-    for (auto& t : Threads)
-        tasks->push_back(std::thread(func, &t));
+    for (size_t i = 1; i < Threads.size(); i++) {
+        tasks->push_back(std::thread(func, &Threads[i]));
+    }
 }
 
 // Wait for helper threads to finish
