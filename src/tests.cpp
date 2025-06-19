@@ -180,13 +180,13 @@ void Perft(char *str) {
     const char *fen = strtok(NULL, "\0") ?: default_fen;
 
     Depth depth = d ? atoi(d) : 5;
-    ParseFen(fen, &Threads->pos);
+    ParseFen(fen, &Threads[0].pos);
 
     printf("\nPerft starting:\nDepth : %d\nFEN   : %s\n", depth, fen);
     fflush(stdout);
 
     const TimePoint start = Now();
-    uint64_t leafNodes = RecursivePerft(&Threads->pos, depth);
+    uint64_t leafNodes = RecursivePerft(&Threads[0].pos, depth);
     const int64_t elapsed = TimeSince(start) + 1;
 
     printf("\nPerft complete:"
@@ -198,7 +198,7 @@ void Perft(char *str) {
 }
 
 void PrintEval(Position *pos) {
-    printf("%d\n", EvalPositionWhitePov(pos, Threads->pawnCache));
+    printf("%d\n", EvalPositionWhitePov(pos, Threads[0].pawnCache));
     fflush(stdout);
 }
 #endif
