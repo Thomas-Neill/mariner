@@ -31,6 +31,7 @@
 #include "threads.h"
 #include "time.h"
 #include "transposition.h"
+#include "endgame.h"
 #include "uci.h"
 
 
@@ -76,8 +77,8 @@ INLINE void Go(Position *pos, char *str) {
 }
 
 // Parses a 'position' and sets up the board
-static void Pos(Position *pos, char *str) {
-
+static void Pos(Position *pos, char *str) 
+{
     bool isFen = !strncmp(str, "position fen", 12);
 
     // Set up original position. This will either be a
@@ -187,7 +188,13 @@ static int HashInput(char *str) {
 }
 
 // Sets up the engine and follows UCI protocol commands
-int main(int argc, char **argv) {
+int main(int argc, char **argv) 
+{
+    // priority 2
+    InitBitboards();
+    // priority 3
+    InitCuckoo();
+    InitEndgames();
 
     // Benchmark
     if (argc > 1 && strstr(argv[1], "bench"))
@@ -233,8 +240,8 @@ INLINE int MateScore(const int score) {
 }
 
 // Print thinking
-void PrintThinking(const Thread *thread, int alpha, int beta) {
-
+void PrintThinking(const Thread *thread, int alpha, int beta) 
+{
     const Position *pos = &thread->pos;
 
     int64_t elapsed   = TimeSince(Limits.start);

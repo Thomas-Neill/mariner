@@ -75,8 +75,6 @@ static const uint64_t BishopMagics[64] = {
 };
 #endif
 
-#define MagicAttack(sq, pt, occ) (Magics[sq][pt - BISHOP].attacks[AttackIndex(sq, pt, occ)])
-
 typedef struct {
     Bitboard mask;
     Bitboard *attacks;
@@ -86,7 +84,7 @@ typedef struct {
 #endif
 } Magic;
 
-enum some_bitboards: uint64_t {
+constexpr uint64_t
     fileABB = 0x0101010101010101,
     fileBBB = 0x0202020202020202,
     fileCBB = 0x0404040404040404,
@@ -108,8 +106,8 @@ enum some_bitboards: uint64_t {
     BlackSquaresBB = 0xAA55AA55AA55AA55,
 
     QueenSideBB = fileABB | fileBBB | fileCBB | fileDBB,
-    KingSideBB  = fileEBB | fileFBB | fileGBB | fileHBB,
-};
+    KingSideBB  = fileEBB | fileFBB | fileGBB | fileHBB
+;
 
 extern const Bitboard FileBB[FILE_NB];
 extern const Bitboard RankBB[RANK_NB];
@@ -124,6 +122,10 @@ extern Bitboard PawnAttacks[COLOR_NB][64];
 extern Bitboard PassedMask[COLOR_NB][64];
 extern Bitboard IsolatedMask[64];
 
+INLINE Bitboard& MagicAttack(Square sq, PieceType pt, Bitboard occ)
+{
+    return Magics[sq][pt - BISHOP].attacks[AttackIndex(sq, pt, occ)];
+}
 
 // Shifts a bitboard (protonspring version)
 // Doesn't work for shifting more than one step horizontally
@@ -241,3 +243,5 @@ bool KingAttacked(const Position *pos, Color color);
 INLINE Bitboard Checkers(const Position *pos) {
     return colorBB(!sideToMove) & Attackers(pos, kingSq(sideToMove), pieceBB(ALL));
 }
+
+void InitBitboards();

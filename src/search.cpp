@@ -143,32 +143,32 @@ static int Quiescence(Thread *thread, Stack *ss, int alpha, int beta) {
     if (!pvNode && ttHit && TTScoreIsMoreInformative(ttBound, ttScore, beta))
         return ttScore;
 
-    if (inCheck) goto moveloop;
+    if (!inCheck)
+    {
 
-    // Do a static evaluation for pruning considerations
-    eval = (ss-1)->move == NOMOVE ? -(ss-1)->staticEval + 2 * Tempo
-         : ttEval != NOSCORE      ? ttEval
-                                  : EvalPosition(pos, thread->pawnCache);
+        // Do a static evaluation for pruning considerations
+        eval = (ss - 1)->move == NOMOVE ? -(ss - 1)->staticEval + 2 * Tempo
+            : ttEval != NOSCORE ? ttEval
+            : EvalPosition(pos, thread->pawnCache);
 
-    unadjustedEval = eval;
-    eval = CorrectEval(thread, ss, eval, pos->rule50);
+        unadjustedEval = eval;
+        eval = CorrectEval(thread, ss, eval, pos->rule50);
 
-    // Use ttScore as eval if it is more informative
-    if (!isTerminal(ttScore) && TTScoreIsMoreInformative(ttBound, ttScore, eval))
-        eval = ttScore;
+        // Use ttScore as eval if it is more informative
+        if (!isTerminal(ttScore) && TTScoreIsMoreInformative(ttBound, ttScore, eval))
+            eval = ttScore;
 
-    // If eval beats beta we assume some move will also beat it
-    if (eval >= beta)
-        return eval;
+        // If eval beats beta we assume some move will also beat it
+        if (eval >= beta)
+            return eval;
 
-    // Use eval as a lower bound if it's above alpha
-    if (eval > alpha)
-        alpha = eval;
+        // Use eval as a lower bound if it's above alpha
+        if (eval > alpha)
+            alpha = eval;
 
-    futility = eval + 165;
-    bestScore = eval;
-
-moveloop:
+        futility = eval + 165;
+        bestScore = eval;
+    }
 
     if (!inCheck) InitNoisyMP(&mp, thread, ss, ttMove);
     else          InitNormalMP(&mp, thread, ss, 0, ttMove, NOMOVE);
@@ -180,26 +180,26 @@ moveloop:
         if (!MoveIsLegal(pos, move)) continue;
 
         // Avoid pruning until at least one move avoids a terminal loss score
-        if (isLoss(bestScore)) goto search;
+        if (!isLoss(bestScore))
+        {
+            // Only try moves the movepicker deems good
+            if (mp.stage > NOISY_GOOD) break;
 
-        // Only try moves the movepicker deems good
-        if (mp.stage > NOISY_GOOD) break;
+            // Futility pruning
+            if (futility + PieceValue[EG][capturing(move)] <= alpha
+                && !promotion(move)) {
+                bestScore = MAX(bestScore, futility + PieceValue[EG][capturing(move)]);
+                continue;
+            }
 
-        // Futility pruning
-        if (    futility + PieceValue[EG][capturing(move)] <= alpha
-            && !promotion(move)) {
-            bestScore = MAX(bestScore, futility + PieceValue[EG][capturing(move)]);
-            continue;
+            // SEE pruning
+            if (futility <= alpha
+                && !SEE(pos, move, 1)) {
+                bestScore = MAX(bestScore, futility);
+                continue;
+            }
         }
 
-        // SEE pruning
-        if (    futility <= alpha
-            && !SEE(pos, move, 1)) {
-            bestScore = MAX(bestScore, futility);
-            continue;
-        }
-
-search:
         ss->move = move;
         ss->continuation = &thread->continuation[inCheck][moveIsCapture(move)][piece(move)][toSq(move)];
         ss->contCorr = &thread->contCorrHistory[piece(move)][toSq(move)];
@@ -301,8 +301,8 @@ static int AlphaBeta(Thread *thread, Stack *ss, int alpha, int beta, Depth depth
         ttHit = false, ttMove = NOMOVE, ttScore = NOSCORE, ttEval = NOSCORE;
 
     // Trust TT if not a pvnode and the entry depth is sufficiently high
-    if (!pvNode && ttHit && ttDepth >= depth && TTScoreIsMoreInformative(ttBound, ttScore, beta)) {
-
+    if (!pvNode && ttHit && ttDepth >= depth && TTScoreIsMoreInformative(ttBound, ttScore, beta)) 
+    {
         // Give a history bonus to quiet tt moves that causes a cutoff
         if (ttScore >= beta && moveIsQuiet(ttMove)) {
             QuietHistoryUpdate(ttMove, Bonus(depth));
@@ -317,8 +317,8 @@ static int AlphaBeta(Thread *thread, Stack *ss, int alpha, int beta, Depth depth
 
     // Probe syzygy TBs
     int tbScore, bound;
-    if (!ss->excluded && ProbeWDL(pos, &tbScore, &bound, ss->ply)) {
-
+    if (!ss->excluded && ProbeWDL(pos, &tbScore, &bound, ss->ply)) 
+    {
         thread->tbhits++;
 
         // Draw scores are exact, while wins are lower bounds and losses upper bounds (mate scores are better/worse)
@@ -363,76 +363,72 @@ static int AlphaBeta(Thread *thread, Stack *ss, int alpha, int beta, Depth depth
         depth--;
 
     // Skip pruning in check, pv nodes, early iterations, when proving singularity, looking for terminal scores, or after a null move
-    if (inCheck || pvNode || !thread->doPruning || ss->excluded || isTerminal(beta) || (ss-1)->move == NOMOVE)
-        goto move_loop;
+    if (!inCheck && !pvNode && thread->doPruning && !ss->excluded && !isTerminal(beta) && (ss-1)->move != NOMOVE)
     {
-    // Reverse Futility Pruning
-    if (   depth < 7
-        && eval >= beta
-        && eval - 77 * (depth - improving) - (ss-1)->histScore / 131 >= beta
-        && (!ttMove || GetHistory(thread, ss, ttMove) > 6450))
-        return eval;
+        // Reverse Futility Pruning
+        if (   depth < 7
+            && eval >= beta
+            && eval - 77 * (depth - improving) - (ss-1)->histScore / 131 >= beta
+            && (!ttMove || GetHistory(thread, ss, ttMove) > 6450))
+            return eval;
 
-    // Null Move Pruning
-    if (   eval >= beta
-        && eval >= ss->staticEval
-        && ss->staticEval >= beta + 138 - 13 * depth
-        && (ss-1)->histScore < 28500
-        && pos->nonPawnCount[sideToMove] > (depth > 8 ? 1 : 0)) {
+        // Null Move Pruning
+        if (   eval >= beta
+            && eval >= ss->staticEval
+            && ss->staticEval >= beta + 138 - 13 * depth
+            && (ss-1)->histScore < 28500
+            && pos->nonPawnCount[sideToMove] > (depth > 8 ? 1 : 0)) {
 
-        Depth reduction = 4 + depth / 4 + MIN(3, (eval - beta) / 227);
+            Depth reduction = 4 + depth / 4 + MIN(3, (eval - beta) / 227);
 
-        ss->move = NOMOVE;
-        ss->continuation = &thread->continuation[0][0][EMPTY][0];
-        ss->contCorr = &thread->contCorrHistory[EMPTY][0];
+            ss->move = NOMOVE;
+            ss->continuation = &thread->continuation[0][0][EMPTY][0];
+            ss->contCorr = &thread->contCorrHistory[EMPTY][0];
 
-        MakeNullMove(pos);
-        int score = -AlphaBeta(thread, ss+1, -beta, -alpha, depth - reduction, !cutnode);
-        TakeNullMove(pos);
+            MakeNullMove(pos);
+            int score = -AlphaBeta(thread, ss+1, -beta, -alpha, depth - reduction, !cutnode);
+            TakeNullMove(pos);
 
-        // Cutoff
-        if (score >= beta)
-            // Don't return unproven terminal win scores
-            return isWin(score) ? beta : score;
-    }
+            // Cutoff
+            if (score >= beta)
+                // Don't return unproven terminal win scores
+                return isWin(score) ? beta : score;
+        }
 
-    int probCutBeta = beta + 200;
+        int probCutBeta = beta + 200;
 
-    // ProbCut
-    if (   depth >= 5
-        && (!ttHit || ttScore >= probCutBeta)) {
+        // ProbCut
+        if (   depth >= 5 && (!ttHit || ttScore >= probCutBeta)) 
+        {
+            InitProbcutMP(&mp, thread, ss, probCutBeta - ss->staticEval);
 
-        InitProbcutMP(&mp, thread, ss, probCutBeta - ss->staticEval);
+            Move move;
+            while ((move = NextMove(&mp))) 
+            {
+                if (mp.stage > NOISY_GOOD) break;
 
-        Move move;
-        while ((move = NextMove(&mp))) {
+                if (!MoveIsLegal(pos, move)) continue;
+                MakeMove(pos, move);
 
-            if (mp.stage > NOISY_GOOD) break;
+                ss->move = move;
+                ss->continuation = &thread->continuation[inCheck][moveIsCapture(move)][piece(move)][toSq(move)];
+                ss->contCorr = &thread->contCorrHistory[piece(move)][toSq(move)];
 
-            if (!MoveIsLegal(pos, move)) continue;
-            MakeMove(pos, move);
+                // See if a quiescence search beats the threshold
+                int score = -Quiescence(thread, ss+1, -probCutBeta, -probCutBeta+1);
 
-            ss->move = move;
-            ss->continuation = &thread->continuation[inCheck][moveIsCapture(move)][piece(move)][toSq(move)];
-            ss->contCorr = &thread->contCorrHistory[piece(move)][toSq(move)];
+                // If it did, do a proper search with reduced depth
+                if (score >= probCutBeta)
+                    score = -AlphaBeta(thread, ss+1, -probCutBeta, -probCutBeta+1, depth-4, !cutnode);
 
-            // See if a quiescence search beats the threshold
-            int score = -Quiescence(thread, ss+1, -probCutBeta, -probCutBeta+1);
+                TakeMove(pos);
 
-            // If it did, do a proper search with reduced depth
-            if (score >= probCutBeta)
-                score = -AlphaBeta(thread, ss+1, -probCutBeta, -probCutBeta+1, depth-4, !cutnode);
-
-            TakeMove(pos);
-
-            // Cut if the reduced depth search beats the threshold, terminal scores are exact
-            if (score >= probCutBeta)
-                return isWin(score) ? score : score - 160;
+                // Cut if the reduced depth search beats the threshold, terminal scores are exact
+                if (score >= probCutBeta)
+                    return isWin(score) ? score : score - 160;
+            }
         }
     }
-    }
-
-move_loop:
 
     InitNormalMP(&mp, thread, ss, depth, ttMove, ss->killer);
 
@@ -446,8 +442,8 @@ move_loop:
 
     // Move loop
     Move move;
-    while ((move = NextMove(&mp))) {
-
+    while ((move = NextMove(&mp))) 
+    {
         if (move == ss->excluded) continue;
         if (root && AlreadySearchedMultiPV(thread, move)) continue;
         if (root && NotInSearchMoves(&Limits.searchmoves[0], move)) continue;
@@ -486,41 +482,40 @@ move_loop:
         Depth extension = 0;
 
         // Avoid extending too far
-        if (root || ss->ply >= thread->depth * 2)
-            goto skip_extensions;
+        if (!root && ss->ply < thread->depth * 2)
+        {
+            // Singular extension
+            if (depth > 4
+                && move == ttMove
+                && !ss->excluded
+                && ttDepth > depth - 3
+                && ttBound != BOUND_UPPER
+                && !isTerminal(ttScore))
+            {
+                // Search to reduced depth with a zero window a bit lower than ttScore
+                int singularBeta = ttScore - depth * (2 - pvNode);
+                ss->excluded = move;
+                score = AlphaBeta(thread, ss, singularBeta - 1, singularBeta, depth / 2, cutnode);
+                ss->excluded = NOMOVE;
 
-        // Singular extension
-        if (   depth > 4
-            && move == ttMove
-            && !ss->excluded
-            && ttDepth > depth - 3
-            && ttBound != BOUND_UPPER
-            && !isTerminal(ttScore)) {
+                // Singular - extend by 1 or 2 ply
+                if (score < singularBeta) {
+                    extension = 1;
+                    if (!pvNode && score < singularBeta - 1 && ss->doubleExtensions <= 5)
+                        extension = 2;
+                    // MultiCut - ttMove as well as at least one other move seem good enough to beat beta
+                }
+                else if (singularBeta >= beta)
+                    return singularBeta;
+                // Negative extension - not singular but likely still good enough to beat beta
+                else if (ttScore >= beta)
+                    extension = -1;
+            }
 
-            // Search to reduced depth with a zero window a bit lower than ttScore
-            int singularBeta = ttScore - depth * (2 - pvNode);
-            ss->excluded = move;
-            score = AlphaBeta(thread, ss, singularBeta-1, singularBeta, depth/2, cutnode);
-            ss->excluded = NOMOVE;
-
-            // Singular - extend by 1 or 2 ply
-            if (score < singularBeta) {
-                extension = 1;
-                if (!pvNode && score < singularBeta - 1 && ss->doubleExtensions <= 5)
-                    extension = 2;
-            // MultiCut - ttMove as well as at least one other move seem good enough to beat beta
-            } else if (singularBeta >= beta)
-                return singularBeta;
-            // Negative extension - not singular but likely still good enough to beat beta
-            else if (ttScore >= beta)
-                extension = -1;
+            // Extend when in check
+            if (inCheck)
+                extension = MAX(extension, 1);
         }
-
-        // Extend when in check
-        if (inCheck)
-            extension = MAX(extension, 1);
-
-skip_extensions:
 
         MakeMove(pos, move);
 

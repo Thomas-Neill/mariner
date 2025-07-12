@@ -63,7 +63,6 @@ typedef struct Position {
     History gameHistory[256];
 } Position;
 
-
 extern bool Chess960;
 
 extern const int NonPawn[PIECE_NB];
@@ -120,3 +119,5 @@ INLINE bool IsRepetition(const Position *pos) {
             return true;
     return false;
 }
+
+void InitCuckoo();

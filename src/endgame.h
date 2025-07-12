@@ -39,3 +39,5 @@ extern Endgame EndgameTable[ENDGAME_TABLE_SIZE];
 INLINE int EndgameIndex(Key materialKey) {
     return materialKey & (ENDGAME_TABLE_SIZE - 1);
 }
+
+void InitEndgames();    // only do this on UCI startup

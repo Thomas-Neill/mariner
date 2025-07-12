@@ -178,44 +178,40 @@ void TakeMove(Position *pos) {
     const Square from = fromSq(move);
     const Square to = toSq(move);
 
-    // Add in pawn captured by en passant
-    if (moveIsEnPas(move))
-        AddPiece(pos, to ^ 8, MakePiece(!sideToMove, PAWN), false);
-
     // Move rook back if castling
-    else if (moveIsCastle(move)) {
+    if (moveIsCastle(move)) 
+    {
         ClearPiece(pos, to, false);
         switch (to) {
-            case C1: MovePiece(pos, D1, RookSquare[WHITE_OOO], false); break;
-            case C8: MovePiece(pos, D8, RookSquare[BLACK_OOO], false); break;
-            case G1: MovePiece(pos, F1, RookSquare[WHITE_OO ], false); break;
-            default: MovePiece(pos, F8, RookSquare[BLACK_OO ], false); break;
+        case C1: MovePiece(pos, D1, RookSquare[WHITE_OOO], false); break;
+        case C8: MovePiece(pos, D8, RookSquare[BLACK_OOO], false); break;
+        case G1: MovePiece(pos, F1, RookSquare[WHITE_OO], false); break;
+        default: MovePiece(pos, F8, RookSquare[BLACK_OO], false); break;
         }
         AddPiece(pos, from, MakePiece(sideToMove, KING), false);
-        goto done;
     }
+    else
     {
+        // Add in pawn captured by en passant
+        if (moveIsEnPas(move))
+            AddPiece(pos, to ^ 8, MakePiece(!sideToMove, PAWN), false);
 
-    // Make reverse move (from <-> to)
-    MovePiece(pos, to, from, false);
+        // Make reverse move (from <-> to)
+        MovePiece(pos, to, from, false);
 
-    // Add back captured piece if any
-    Piece capt = capturing(move);
-    if (capt != EMPTY) {
-        assert(ValidCapture(capt));
-        AddPiece(pos, to, capt, false);
+        // Add back captured piece if any
+        if (Piece capt = capturing(move); capt != EMPTY) {
+            assert(ValidCapture(capt));
+            AddPiece(pos, to, capt, false);
+        }
+
+        // Remove promoted piece and put back the pawn
+        if (Piece promo = promotion(move); promo != EMPTY) {
+            assert(ValidPromotion(promo));
+            ClearPiece(pos, from, false);
+            AddPiece(pos, from, MakePiece(sideToMove, PAWN), false);
+        }
     }
-
-    // Remove promoted piece and put back the pawn
-    Piece promo = promotion(move);
-    if (promo != EMPTY) {
-        assert(ValidPromotion(promo));
-        ClearPiece(pos, from, false);
-        AddPiece(pos, from, MakePiece(sideToMove, PAWN), false);
-    }
-    }
-
-done:
 
     // Get various info from history
     pos->key            = history(0).key;
@@ -229,8 +225,8 @@ done:
 }
 
 // Make a move - take it back and return false if move was illegal
-void MakeMove(Position *pos, const Move move) {
-
+void MakeMove(Position *pos, const Move move) 
+{
     TTPrefetch(KeyAfter(pos, move));
 
     // Save position
@@ -267,50 +263,47 @@ void MakeMove(Position *pos, const Move move) {
             default: MovePiece(pos, RookSquare[BLACK_OO ], F8, true); break;
         }
         AddPiece(pos, to, MakePiece(sideToMove, KING), true);
-        goto done;
     }
+    else
     {
-
-    // Remove captured piece if any
-    Piece capt = capturing(move);
-    if (capt != EMPTY) {
-        assert(ValidCapture(capt));
-        ClearPiece(pos, to, true);
-        pos->rule50 = 0;
-    }
-
-    // Move the piece
-    MovePiece(pos, from, to, true);
-
-    // Pawn move specifics
-    if (pieceTypeOn(to) == PAWN) {
-
-        pos->rule50 = 0;
-        Piece promo = promotion(move);
-
-        // Set en passant square if applicable
-        if (moveIsPStart(move)) {
-            if (  PawnAttackBB(sideToMove, to ^ 8)
-                & colorPieceBB(!sideToMove, PAWN)) {
-
-                pos->epSquare = to ^ 8;
-                HASH_EP;
-            }
-
-        // Remove pawn captured by en passant
-        } else if (moveIsEnPas(move))
-            ClearPiece(pos, to ^ 8, true);
-
-        // Replace promoting pawn with new piece
-        else if (promo != EMPTY) {
-            assert(ValidPromotion(promo));
+        // Remove captured piece if any
+        Piece capt = capturing(move);
+        if (capt != EMPTY) {
+            assert(ValidCapture(capt));
             ClearPiece(pos, to, true);
-            AddPiece(pos, to, promo, true);
+            pos->rule50 = 0;
+        }
+
+        // Move the piece
+        MovePiece(pos, from, to, true);
+
+        // Pawn move specifics
+        if (pieceTypeOn(to) == PAWN) {
+
+            pos->rule50 = 0;
+            Piece promo = promotion(move);
+
+            // Set en passant square if applicable
+            if (moveIsPStart(move)) {
+                if (  PawnAttackBB(sideToMove, to ^ 8)
+                    & colorPieceBB(!sideToMove, PAWN)) {
+
+                    pos->epSquare = to ^ 8;
+                    HASH_EP;
+                }
+
+            // Remove pawn captured by en passant
+            } else if (moveIsEnPas(move))
+                ClearPiece(pos, to ^ 8, true);
+
+            // Replace promoting pawn with new piece
+            else if (promo != EMPTY) {
+                assert(ValidPromotion(promo));
+                ClearPiece(pos, to, true);
+                AddPiece(pos, to, promo, true);
+            }
         }
     }
-    }
-
-done:
 
     // Change turn to play
     sideToMove ^= 1;

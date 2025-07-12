@@ -714,64 +714,62 @@ bool tb_init(const char *path)
       }
 
   // 6- and 7-piece TBs make sense only with a 64-bit address space
-  if (sizeof(size_t) < 8 || TB_PIECES < 6)
-    goto finished;
+  if (sizeof(size_t) >= 8 && TB_PIECES >= 6)
+  {
+      for (i = 0; i < 5; i++)
+          for (j = i; j < 5; j++)
+              for (k = i; k < 5; k++)
+                  for (l = (i == k) ? j : k; l < 5; l++) {
+                      snprintf(str, 16, "K%c%cvK%c%c", tb_pchr(i), tb_pchr(j), tb_pchr(k), tb_pchr(l));
+                      init_tb(str);
+                  }
 
-  for (i = 0; i < 5; i++)
-    for (j = i; j < 5; j++)
-      for (k = i; k < 5; k++)
-        for (l = (i == k) ? j : k; l < 5; l++) {
-          snprintf(str, 16, "K%c%cvK%c%c", tb_pchr(i), tb_pchr(j), tb_pchr(k), tb_pchr(l));
-          init_tb(str);
-        }
+      for (i = 0; i < 5; i++)
+          for (j = i; j < 5; j++)
+              for (k = j; k < 5; k++)
+                  for (l = 0; l < 5; l++) {
+                      snprintf(str, 16, "K%c%c%cvK%c", tb_pchr(i), tb_pchr(j), tb_pchr(k), tb_pchr(l));
+                      init_tb(str);
+                  }
 
-  for (i = 0; i < 5; i++)
-    for (j = i; j < 5; j++)
-      for (k = j; k < 5; k++)
-        for (l = 0; l < 5; l++) {
-          snprintf(str, 16, "K%c%c%cvK%c", tb_pchr(i), tb_pchr(j), tb_pchr(k), tb_pchr(l));
-          init_tb(str);
-        }
+      for (i = 0; i < 5; i++)
+          for (j = i; j < 5; j++)
+              for (k = j; k < 5; k++)
+                  for (l = k; l < 5; l++) {
+                      snprintf(str, 16, "K%c%c%c%cvK", tb_pchr(i), tb_pchr(j), tb_pchr(k), tb_pchr(l));
+                      init_tb(str);
+                  }
 
-  for (i = 0; i < 5; i++)
-    for (j = i; j < 5; j++)
-      for (k = j; k < 5; k++)
-        for (l = k; l < 5; l++) {
-          snprintf(str, 16, "K%c%c%c%cvK", tb_pchr(i), tb_pchr(j), tb_pchr(k), tb_pchr(l));
-          init_tb(str);
-        }
+      if (TB_PIECES >= 7)
+      {
+          for (i = 0; i < 5; i++)
+              for (j = i; j < 5; j++)
+                  for (k = j; k < 5; k++)
+                      for (l = k; l < 5; l++)
+                          for (m = l; m < 5; m++) {
+                              snprintf(str, 16, "K%c%c%c%c%cvK", tb_pchr(i), tb_pchr(j), tb_pchr(k), tb_pchr(l), tb_pchr(m));
+                              init_tb(str);
+                          }
 
-  if (TB_PIECES < 7)
-    goto finished;
+          for (i = 0; i < 5; i++)
+              for (j = i; j < 5; j++)
+                  for (k = j; k < 5; k++)
+                      for (l = k; l < 5; l++)
+                          for (m = 0; m < 5; m++) {
+                              snprintf(str, 16, "K%c%c%c%cvK%c", tb_pchr(i), tb_pchr(j), tb_pchr(k), tb_pchr(l), tb_pchr(m));
+                              init_tb(str);
+                          }
 
-  for (i = 0; i < 5; i++)
-    for (j = i; j < 5; j++)
-      for (k = j; k < 5; k++)
-        for (l = k; l < 5; l++)
-          for (m = l; m < 5; m++) {
-            snprintf(str, 16, "K%c%c%c%c%cvK", tb_pchr(i), tb_pchr(j), tb_pchr(k), tb_pchr(l), tb_pchr(m));
-            init_tb(str);
-          }
-
-  for (i = 0; i < 5; i++)
-    for (j = i; j < 5; j++)
-      for (k = j; k < 5; k++)
-        for (l = k; l < 5; l++)
-          for (m = 0; m < 5; m++) {
-            snprintf(str, 16, "K%c%c%c%cvK%c", tb_pchr(i), tb_pchr(j), tb_pchr(k), tb_pchr(l), tb_pchr(m));
-            init_tb(str);
-          }
-
-  for (i = 0; i < 5; i++)
-    for (j = i; j < 5; j++)
-      for (k = j; k < 5; k++)
-        for (l = 0; l < 5; l++)
-          for (m = l; m < 5; m++) {
-            snprintf(str, 16, "K%c%c%cvK%c%c", tb_pchr(i), tb_pchr(j), tb_pchr(k), tb_pchr(l), tb_pchr(m));
-            init_tb(str);
-          }
-
-finished:
+          for (i = 0; i < 5; i++)
+              for (j = i; j < 5; j++)
+                  for (k = j; k < 5; k++)
+                      for (l = 0; l < 5; l++)
+                          for (m = l; m < 5; m++) {
+                              snprintf(str, 16, "K%c%c%cvK%c%c", tb_pchr(i), tb_pchr(j), tb_pchr(k), tb_pchr(l), tb_pchr(m));
+                              init_tb(str);
+                          }
+      }
+  }
 
   // Set TB_LARGEST, for backward compatibility with pre-7-man Fathom
   TB_LARGEST = TB_MaxCardinality;

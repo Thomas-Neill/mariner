@@ -120,7 +120,7 @@ static void InitSliderAttacks(PieceType pt, Bitboard table[]) {
 }
 
 // Initializes all bitboard lookups
-CONSTR(2, InitBitboards)
+void InitBitboards()
 {
     InitNonSliderAttacks();
 

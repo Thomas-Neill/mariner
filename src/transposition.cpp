@@ -47,8 +47,8 @@ TTEntry* ProbeTT(const Key key, bool *ttHit) {
 }
 
 // Store an entry in the transposition table
-void StoreTTEntry(TTEntry *tte, Key key, Move move, int score, int eval, Depth depth, int bound) {
-
+void StoreTTEntry(TTEntry *tte, Key key, Move move, int score, int eval, Depth depth, int bound) 
+{
     assert(ValidBound(bound));
     assert(ValidScore(score));
 

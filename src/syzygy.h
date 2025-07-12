@@ -34,8 +34,8 @@ static int TBScore(const unsigned result, const int distance) {
 }
 
 // Probe local Syzygy files using Pyrrhic to get score
-static bool ProbeWDL(const Position *pos, int *score, int *bound, int ply) {
-
+static bool ProbeWDL(const Position *pos, int *score, int *bound, int ply) 
+{
     // Don't probe at root, when castling is possible, or when 50 move rule
     // was not reset by the last move. Finally, there is obviously no point
     // if there are more pieces than we have TBs for.

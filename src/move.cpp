@@ -26,8 +26,8 @@
 
 
 // Checks whether a move is pseudo-legal (assuming it is pseudo-legal in some position)
-bool MoveIsPseudoLegal(const Position *pos, const Move move) {
-
+bool MoveIsPseudoLegal(const Position *pos, const Move move) 
+{
     if (!move) return false;
 
     const Color color = sideToMove;

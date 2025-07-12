@@ -224,8 +224,8 @@ static void InitCastlingRight(Position *pos, Color color, int file) {
 }
 
 // Parse FEN and set up the position as described
-void ParseFen(const char *fen, Position *pos) {
-
+void ParseFen(const char *fen, Position *pos) 
+{
     memset(pos, 0, sizeof(Position));
     char c, *copy = strdup(fen);
     char *token = strtok(copy, " ");
@@ -418,7 +418,8 @@ static Move cuckooMove[8192];
 INLINE uint32_t Hash1(Key hash) { return  hash        & 0x1fff; }
 INLINE uint32_t Hash2(Key hash) { return (hash >> 16) & 0x1fff; }
 
-CONSTR(3, InitCuckoo) {
+void InitCuckoo()
+{
     int validate = 0;
 
     for (Color c = WHITE; c <= BLACK; c++)
@@ -452,16 +453,16 @@ CONSTR(3, InitCuckoo) {
 }
 
 // Upcoming repetition detection
-bool HasCycle(const Position *pos, int ply) {
-
-    for (int i = 3; i <= pos->rule50; i += 2) {
-
+bool HasCycle(const Position *pos, int ply) 
+{
+    for (int i = 3; i <= pos->rule50; i += 2) 
+    {
         const History *prev = &history(-i);
         uint32_t j;
         Key moveKey = pos->key ^ prev->key;
         if (   (j = Hash1(moveKey), cuckoo[j] == moveKey)
-            || (j = Hash2(moveKey), cuckoo[j] == moveKey)) {
-
+            || (j = Hash2(moveKey), cuckoo[j] == moveKey)) 
+        {
             Move move = cuckooMove[j];
             Square from = fromSq(move), to = toSq(move);
 
@@ -509,8 +510,8 @@ void PrintBoard(const Position *pos) {
 
 #ifndef NDEBUG
 // Generates the pawn key from scratch
-static Key GenPawnKey(const Position *pos) {
-
+static Key GenPawnKey(const Position *pos) 
+{
     Key key = 0;
 
     for (Color c = WHITE; c <= BLACK; c++) {
@@ -523,8 +524,8 @@ static Key GenPawnKey(const Position *pos) {
 }
 
 // Check board state makes sense
-bool PositionOk(const Position *pos) {
-
+bool PositionOk(const Position *pos) 
+{
     assert(0 <= pos->histPly && pos->histPly < 256);
 
     int counts[PIECE_NB] = { 0 };

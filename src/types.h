@@ -25,7 +25,7 @@
 
 #ifdef _MSC_VER
 #define INLINE __forceinline
-#define CONSTR(prio, func) void func()
+#define CONSTR(prio, func) void func(); struct _##func { _##func() { func(); }} the##func; void func()
 #else
 #define INLINE static inline __attribute__((always_inline))
 #define CONSTR(prio, func) static __attribute__((constructor (1000 + prio))) void func()
