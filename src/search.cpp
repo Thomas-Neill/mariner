@@ -563,6 +563,12 @@ static int AlphaBeta(Thread *thread, Stack *ss, int alpha, int beta, Depth depth
                 if (quiet && (score <= alpha || score >= beta))
                     UpdateContHistories(ss, move, score >= beta ? Bonus(depth) : Malus(depth));
             }
+            else if (lmrDepth >= newDepth)
+            {
+                // Update continuation history if the search failed high or low
+                if (quiet && (score <= alpha || score >= beta))
+                    UpdateContHistories(ss, move, score >= beta ? Bonus(depth) : Malus(depth));
+            }
         }
 
         // Full depth zero-window search
