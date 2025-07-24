@@ -48,9 +48,9 @@ extern const int PhaseValue[TYPE_NB];
 #define MgScore(s) ((int16_t)((uint16_t)((unsigned)((s)))))
 #define EgScore(s) ((int16_t)((uint16_t)((unsigned)((s) + 0x8000) >> 16)))
 
-// Calculates the phase from the phase values of the pieces left
+// Calculates the phase from the phase values of the pieces left (0 to 24)
 INLINE int UpdatePhase(int value) {
-    return (value * MidGame + 12) / 24;
+    return value < 4 ? 0 : ((value - 3) * MidGame + 10) / 21;
 }
 
 // Returns a static evaluation of the position from the side to move's point of view
