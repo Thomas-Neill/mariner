@@ -169,7 +169,7 @@ static int Quiescence(Thread *thread, Stack *ss, int alpha, int beta) {
 moveloop:
 
     if (!inCheck) InitNoisyMP(&mp, thread, ss, ttMove);
-    else          InitNormalMP(&mp, thread, ss, 0, ttMove, NOMOVE);
+    else          InitNormalMP(&mp, thread, ss, 0, ttMove, {});
 
     // Move loop
     Move bestMove = NOMOVE;
@@ -335,7 +335,7 @@ static int AlphaBeta(Thread *thread, Stack *ss, int alpha, int beta, Depth depth
         }
     }
 
-    (ss+1)->killer = NOMOVE;
+    (ss+1)->killer = {};
 
     // Do a static evaluation for pruning considerations
     int eval = ss->staticEval =  inCheck           ? NOSCORE

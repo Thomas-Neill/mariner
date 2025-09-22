@@ -33,7 +33,7 @@ static Move PickNextMove(MovePicker *mp) {
     Move bestMove = list->moves[list->next++].move;
 
     // Avoid returning the TT or killer moves again
-    if (bestMove == mp->ttMove || bestMove == mp->killer)
+    if (bestMove == mp->ttMove || mp->killer.contains(bestMove))
         return PickNextMove(mp);
 
     return bestMove;
@@ -107,9 +107,12 @@ Move NextMove(MovePicker *mp) {
             // fall through
         case KILLER:
             mp->stage++;
-            if (   mp->killer != mp->ttMove
-                && MoveIsPseudoLegal(pos, mp->killer))
-                return mp->killer;
+            if(mp->kidx < NKIL) {
+                const Move& killer = mp->killer.moves[mp->kidx++];
+                if (   killer != mp->ttMove
+                    && MoveIsPseudoLegal(pos, killer))
+                    return killer;
+            }
 
             // fall through
         case GEN_QUIET:
@@ -140,7 +143,7 @@ Move NextMove(MovePicker *mp) {
 }
 
 // Init normal movepicker
-void InitNormalMP(MovePicker *mp, Thread *thread, Stack *ss, Depth depth, Move ttMove, Move killer) {
+void InitNormalMP(MovePicker *mp, Thread *thread, Stack *ss, Depth depth, Move ttMove, Killer killer) {
     mp->list.count = mp->list.next = 0;
     mp->thread    = thread;
     mp->ss        = ss;
@@ -148,6 +151,7 @@ void InitNormalMP(MovePicker *mp, Thread *thread, Stack *ss, Depth depth, Move t
     mp->stage     = ttMove ? TTMOVE : GEN_NOISY;
     mp->depth     = depth;
     mp->killer    = killer;
+    mp->kidx      = 0;
     mp->bads      = 0;
     mp->threshold = 0;
     mp->onlyNoisy = false;
@@ -155,11 +159,11 @@ void InitNormalMP(MovePicker *mp, Thread *thread, Stack *ss, Depth depth, Move t
 
 // Init noisy movepicker
 void InitNoisyMP(MovePicker *mp, Thread *thread, Stack *ss, Move ttMove) {
-    InitNormalMP(mp, thread, ss, 0, ttMove, NOMOVE);
+    InitNormalMP(mp, thread, ss, 0, ttMove, {});
     mp->onlyNoisy = true;
 }
 
 void InitProbcutMP(MovePicker *mp, Thread *thread, Stack *ss, int threshold) {
-    InitNoisyMP(mp, thread, ss, NOMOVE);
+    InitNoisyMP(mp, thread, ss, {});
     mp->threshold = threshold;
 }

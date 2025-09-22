@@ -20,6 +20,7 @@
 
 #include "board.h"
 #include "types.h"
+#include <array>
 
 
 #define PAWN_CACHE_SIZE 128 * 1024
@@ -102,3 +103,20 @@ extern const int KingLineDanger[28];
 
 // Mobility
 extern const int Mobility[4][28];
+
+
+const int NKIL = 2;
+struct Killer {
+    Move moves[NKIL];
+
+    inline bool contains(Move move) {
+        for(int i = 0; i < NKIL; i ++) if(moves[i] == move) return true;
+        return false;
+    }
+
+    inline void ingest(Move move) {
+        for(int i = 1; i < NKIL;i++)
+            moves[i] = moves[i-1];
+        moves[0] = move;
+    }
+};

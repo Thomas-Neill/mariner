@@ -48,7 +48,7 @@ typedef struct {
     Depth ply;
     Move move;
     Move excluded;
-    Move killer;
+    Killer killer;
     PV pv;
 } Stack;
 
